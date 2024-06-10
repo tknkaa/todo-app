@@ -11,18 +11,19 @@ type InputFormProps = {
   setTaskList: (taskList: Task[]) => void;
 };
 
+let count = 0;
 function InputForm(props: InputFormProps) {
   const [inputText, setInputText] = useState("");
-
   return (
     <div className="inputForm">
       <form
         onSubmit={(e) => {
+          count += 1;
           e.preventDefault(); //再レンダリングしない
           props.setTaskList([
             ...props.taskList,
             {
-              id: props.taskList.length, //順番を入れ替えないからこれでいいらしい
+              id: count,
               text: inputText,
               completed: false,
             },
