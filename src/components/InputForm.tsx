@@ -1,5 +1,3 @@
-import React from 'react'
-
 const InputForm = () => {
   return (
     <div className='inputForm'>
