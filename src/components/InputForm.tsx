@@ -1,9 +1,14 @@
 import { useState } from "react";
+
+type Task = {
+  id: number;
+  text: string;
+  completed: boolean;
+};
+
 type InputFormProps = {
-  taskList: { id: number; text: string; completed: boolean }[];
-  setTaskList: (
-    taskList: { id: number; text: string; completed: boolean }[],
-  ) => void;
+  taskList: Task[];
+  setTaskList: (taskList: Task[]) => void;
 };
 
 function InputForm(props: InputFormProps) {
@@ -17,7 +22,7 @@ function InputForm(props: InputFormProps) {
           props.setTaskList([
             ...props.taskList,
             {
-              id: props.taskList.length, //順番を入れ替えないからこれでよい
+              id: props.taskList.length, //順番を入れ替えないからこれでいいらしい
               text: inputText,
               completed: false,
             },

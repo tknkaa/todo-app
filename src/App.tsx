@@ -4,8 +4,14 @@ import TodoList from "./components/TodoList";
 import "./App.css";
 import { useState } from "react";
 
-const App = () => {
-  const [taskList, setTaskList] = useState([]);
+type Task = {
+  id: number;
+  text: string;
+  completed: boolean;
+};
+
+function App() {
+  const [taskList, setTaskList] = useState<Task[]>([]);
 
   return (
     <div>
@@ -14,6 +20,6 @@ const App = () => {
       <TodoList taskList={taskList} setTaskList={setTaskList} />
     </div>
   );
-};
+}
 
 export default App;
