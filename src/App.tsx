@@ -1,4 +1,3 @@
-import React from 'react'
 import Title from "./components/Title";
 import InputForm from "./components/InputForm";
 import TodoList from './components/TodoList';
