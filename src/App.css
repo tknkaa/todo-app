@@ -2,10 +2,10 @@ header {
   text-align: center;
   width: 80vw;
   margin: 2rem auto;
-  padding: 2rem ;
- }
+  padding: 2rem;
+}
 
- .inputForm {
+.inputForm {
   width: 80vh;
   margin: 0 auto;
   text-align: center;
@@ -17,4 +17,9 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.completed {
+  text-decoration: line-through;
+  opacity: 0.5;
 }
