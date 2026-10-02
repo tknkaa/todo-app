@@ -98,13 +98,32 @@ pnpm exec wrangler preview base-config secret put BETTER_AUTH_SECRET      # 全�
 
 **`kanban-reminder-worker`** (本番だけ):
 
-| 設定                  | 値                                                         |
-| --------------------- | ---------------------------------------------------------- |
-| Root directory        | `/`                                                        |
-| Build command         | `pnpm install --frozen-lockfile`                           |
-| Deploy command        | `pnpm --filter @todo/reminder-worker exec wrangler deploy` |
-| Non-production builds | 無効                                                       |
-| Build watch paths     | `apps/reminder-worker/**`、`packages/**`、`pnpm-lock.yaml` |
+| 設定              | 値                                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| Root directory    | `/`                                                                                      |
+| Build command     | `pnpm --filter @todo/reminder-worker typecheck` (ビルドの手順はないので、型チェックだけ) |
+| Deploy command    | `pnpm --filter @todo/reminder-worker exec wrangler deploy`                               |
+| Production branch | `main`                                                                                   |
+| Previews          | 無効                                                                                     |
+
+**注意 (はまったところ):**
+
+- 本番のブランチは `main` にする。最初の設定で、本番のブランチが PR のブランチになっていて、PR のプッシュが本番のビルドとして扱われていた。
+- `main` 以外のブランチは、「Previews」を有効にして、Preview command に `./scripts/deploy-preview.sh` を入れる。Previews が無効だと、古い方式の「非本番のデプロイ」になり、PR のコメントにプレビューの URL が出ない。
+- ブランチの最初のビルドのときに、そのときの設定が写される。設定は、PR を出す前に済ませる。
+
+### 設定を確かめる (`cf`)
+
+ダッシュボードの表示と、実際に保存された値が違うことがあった。Cloudflare の CLI (`cf`) で、保存された値を直接読める。
+
+```sh
+npx -y cf auth login                                    # 初回だけ。ブラウザで承認する
+export CLOUDFLARE_ACCOUNT_ID=df6c3acd32f66bd1eb95e50607684297
+npx -y cf workers scripts search                        # Worker のタグ (内部 ID) を調べる
+npx -y cf builds workers get <タグ>                     # 本番のブランチ、コマンド、Previews の有無
+npx -y cf builds triggers list --external-script-id <タグ>
+npx -y cf builds logs get <ビルドの UUID>               # ビルドのログ
+```
 
 ## 5. 最初から作り直すとき (参考)
 
