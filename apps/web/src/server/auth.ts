@@ -3,8 +3,9 @@ import { betterAuth } from 'better-auth'
 import { drizzle } from 'drizzle-orm/d1'
 import { D1TaskMemberRepository } from '@todo/db'
 import * as schema from '@todo/db/schema'
+import { socialProviders, type SocialEnv } from './auth-config'
 
-interface AuthEnv {
+interface AuthEnv extends SocialEnv {
   DB: D1Database
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL?: string
@@ -26,6 +27,18 @@ export function getAuth(env: AuthEnv) {
       },
     }),
     emailAndPassword: { enabled: true },
+    socialProviders: socialProviders(env),
+    account: {
+      // Signing in with GitHub joins an existing account of the same address only when that
+      // account's own address is verified. Password sign-ups here are not verified, so GitHub is
+      // refused for those addresses: otherwise someone could register another person's address
+      // first, and take over the account once that person signs in with GitHub.
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ['github'],
+        requireLocalEmailVerified: true,
+      },
+    },
     databaseHooks: {
       user: {
         create: {

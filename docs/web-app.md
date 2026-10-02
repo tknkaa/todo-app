@@ -30,9 +30,42 @@
 
 ローカルでは `apps/web/.dev.vars` に書く。本番は Cloudflare のシークレットに設定する。
 
+### GitHub でのログイン ([#2](https://github.com/ut-code/kanban/issues/2))
+
+実装: `src/server/auth-config.ts`、`src/server/auth.ts`、ログイン画面は `src/routes/login.tsx`。
+
+- **`GITHUB_CLIENT_ID` と `GITHUB_CLIENT_SECRET` の両方がある環境でだけ有効**になる。ない環境 (ローカルで書いていないとき、プレビューなど) では、ログイン画面に「GitHub でログイン」のボタンが出ない。環境の名前で分けるのではなく、設定の有無で分ける。
+- ボタンを出すかどうかは、サーバーの `GET /api/config` (`{ "github": true | false }`) で決める。キーやシークレットは返さない。
+- GitHub のアカウントのメールアドレス (確認済みのもの) で、アカウントを作る。
+- **同じメールアドレスのメール/パスワードのアカウントが、すでにある場合は、GitHub でのログインを断る。** better-auth は、既存のアカウントのメールアドレスが確認済みのときだけ、GitHub のアカウントを、ひとつにまとめる (`requireLocalEmailVerified`)。このアプリのメール/パスワードのアカウントは、メールの確認をしていないので、まとめない。まとめてしまうと、他人のメールアドレスで先に登録しておき、あとから本人が GitHub でログインしたときに、乗っ取れる (アカウントの事前乗っ取り)。断られた人には、ログイン画面に「このメールアドレスは、すでにメールとパスワードで登録されています」と出す (`/login?error=unable_to_link_account`)。メールの確認ができるようになったら ([#8](https://github.com/ut-code/kanban/issues/8)、[#42](https://github.com/ut-code/kanban/issues/42))、まとめられるようにできる。
+- GitHub のアカウントにメールアドレスがない、または確認されていないときも、ログイン画面に理由を出す。
+- 共有の招待 (アカウントがないメールアドレスへの共有) は、GitHub でアカウントを作ったときにも、メール/パスワードのときと同じように反映される。
+- 取得する権限は、`read:user` と `user:email` (メールアドレスを知るため)。
+
+**GitHub 側の準備 (GitHub の画面での作業):** ut-code の org (または個人のアカウント。あとから org に移せる) の Settings → Developer settings → OAuth Apps → New OAuth App で、**アプリを 1 つ**作る。GitHub の OAuth App は、2026 年 8 月から、戻り先 (Authorization callback URL) を最大 10 個まで登録できるので、本番とローカルを同じアプリに登録する。
+
+| 項目                              | 値                                                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Homepage URL                      | `https://kanban-web.ut-code.workers.dev`                                                                            |
+| Authorization callback URL (2 つ) | `https://kanban-web.ut-code.workers.dev/api/auth/callback/github`、`http://localhost:8787/api/auth/callback/github` |
+| Allow wildcard matching           | **オフ** (両方の URL)                                                                                               |
+| Enable Device Flow                | オフ (CLI などの用。使わない)                                                                                       |
+| Expire user access tokens         | オフでよい (ログインのときに 1 回、プロフィールを読むだけで、あとで GitHub の API を呼ばない)                       |
+
+できたクライアント ID と、「Generate a new client secret」で作ったシークレットを、環境に入れる。シークレットは、チャットやコミットに書かない。
+
+```sh
+# 本番 (ut-code のアカウント)
+export CLOUDFLARE_ACCOUNT_ID=df6c3acd32f66bd1eb95e50607684297
+pnpm --filter @todo/web exec wrangler secret put GITHUB_CLIENT_ID
+pnpm --filter @todo/web exec wrangler secret put GITHUB_CLIENT_SECRET
+# ローカル: apps/web/.dev.vars に GITHUB_CLIENT_ID と GITHUB_CLIENT_SECRET を書く
+```
+
+**プレビューでは使えない:** プレビューは、ブランチごとに URL が違う (`<ブランチ名>-kanban-web.ut-code.workers.dev`)。戻り先の「ワイルドカード」は、登録した URL の**サブドメイン**を許すだけで、この URL は兄弟のホスト名なので合わない。全部を受け付けるには `ut-code.workers.dev` そのものを登録することになり、ut-code のアカウントのほかの Worker にも認可コードが渡りうるので、しない。ブランチごとのプレビューでは、メール/パスワードで確かめる。プレビューの設定には、キーを入れない (入れなければボタンが出ない)。better-auth の `oAuthProxy` で、本番を経由させる方法もあるが、本番とプレビューで暗号化のシークレットを共有するので、必要になるまで使わない。
+
 ### 予定
 
-- Google OAuth ([#2](https://github.com/ut-code/kanban/issues/2))
 - メールアドレスの確認とパスワードリセットは、現時点では扱わない。
 
 ## タスク
@@ -139,7 +172,7 @@
 ### 共有
 
 - 所有者が、相手のメールアドレスで共有する。自分自身とは共有できない。
-- アカウントがあるアドレスは、すぐに共有される。アカウントがないアドレスは「招待」として保存され、そのアドレスでアカウントを作った (メール/パスワードでも Google でも) ときに共有される。
+- アカウントがあるアドレスは、すぐに共有される。アカウントがないアドレスは「招待」として保存され、そのアドレスでアカウントを作った (メール/パスワードでも GitHub でも) ときに共有される。
 - **共有の API は、アドレスにアカウントがあるかどうかを答えない。** どちらの場合も同じ応答 (201 と共有先の一覧) を返し、一覧にも両者を区別せずにメールアドレスだけを並べる。ログイン済みなら誰でも、アカウントの有無を調べられる、という状態を避けるため。
 - 新しく共有したときだけ、相手にメールを送る ([ワーカー仕様](worker.md))。すでに共有している相手に共有し直しても、メールは送らない。
 - 共有された人は、タイトル・締め切り・ステータス・本文を編集し、カードを並べ替えられる。削除、リマインドの設定、添付ファイル、共有の操作は所有者だけ。リマインドは所有者にだけ届く。

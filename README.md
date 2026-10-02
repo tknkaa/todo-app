@@ -24,7 +24,7 @@ pnpm db:migrate:local
 pnpm dev
 ```
 
-`pnpm dev` builds the app and starts it in Wrangler's local Workers runtime so the D1 binding is available. Set `BETTER_AUTH_SECRET` in `apps/web/.dev.vars` to a long random string (`openssl rand -hex 32`). Sign up with email and password in the app; Google OAuth is tracked in a separate issue.
+`pnpm dev` builds the app and starts it in Wrangler's local Workers runtime so the D1 binding is available. Set `BETTER_AUTH_SECRET` in `apps/web/.dev.vars` to a long random string (`openssl rand -hex 32`). Sign up with email and password in the app. GitHub sign-in appears only when `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set (see docs/web-app.md).
 
 ## Inspecting the local database
 

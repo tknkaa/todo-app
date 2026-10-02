@@ -34,4 +34,20 @@ test.describe('signing in', () => {
     await expect(page.getByRole('alert')).toBeVisible()
     await expect(page).toHaveURL(/\/login$/)
   })
+
+  test('shows the GitHub button only when the server has keys for it', async ({ page }) => {
+    // The test server is started without GitHub keys.
+    await page.goto('/login')
+    expect(await (await page.request.get('/api/config')).json()).toEqual({ github: false })
+    await expect(page.getByRole('button', { name: /GitHub/ })).toHaveCount(0)
+  })
+
+  test('tells a person whose GitHub sign-in was refused what to do instead', async ({ page }) => {
+    // better-auth sends a refused sign-in back to the login page with the reason in the address.
+    await page.goto('/login?error=unable_to_link_account')
+    await expect(page.getByRole('alert')).toContainText('メールとパスワードで登録')
+
+    await page.goto('/login?error=something-unexpected')
+    await expect(page.getByRole('alert')).toContainText('GitHub でのログインに失敗しました')
+  })
 })
