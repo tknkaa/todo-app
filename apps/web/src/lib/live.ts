@@ -17,3 +17,11 @@ export function isTasksChanged(data: unknown) {
     return false
   }
 }
+
+/**
+ * Close code to answer a client's close with. Browsers report 1005 (no code sent) and 1006
+ * (connection dropped), but those must never be sent, so they are answered with a normal close.
+ */
+export function replyCloseCode(received: number) {
+  return [1004, 1005, 1006, 1015].includes(received) ? 1000 : received
+}

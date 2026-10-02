@@ -1,3 +1,5 @@
+import { replyCloseCode } from './lib/live'
+
 /** One room per user: it fans a notification out to all of that user's open browser tabs. */
 export class CollaborationRoom {
   constructor(
@@ -33,6 +35,6 @@ export class CollaborationRoom {
   }
 
   webSocketClose(socket: WebSocket, code: number, reason: string) {
-    socket.close(code, reason)
+    socket.close(replyCloseCode(code), reason)
   }
 }
