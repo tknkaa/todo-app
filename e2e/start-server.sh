@@ -9,7 +9,7 @@ PORT=8788
 
 rm -rf "$STATE"
 pnpm --filter @todo/web build
-pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --local --persist-to "../../$STATE"
+pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db --local --persist-to "../../$STATE"
 exec pnpm --filter @todo/web exec wrangler dev --local --port "$PORT" --persist-to "../../$STATE" \
   --var BETTER_AUTH_SECRET:e2e-secret-e2e-secret-e2e-secret-1234 \
   --var BETTER_AUTH_URL:"http://localhost:$PORT"

@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "todo-reminder-worker",
+  "name": "kanban-reminder-worker",
   "main": "src/index.ts",
   "compatibility_date": "2026-01-01",
   "vars": {
@@ -14,7 +14,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "todo-db",
+      "database_name": "kanban-db",
       "database_id": "replace-with-production-database-id",
       "migrations_dir": "../../packages/db/migrations",
     },
@@ -23,22 +23,22 @@
     "producers": [
       {
         "binding": "REMINDER_QUEUE",
-        "queue": "todo-reminders",
+        "queue": "kanban-reminders",
       },
     ],
     "consumers": [
       {
-        "queue": "todo-reminders",
+        "queue": "kanban-reminders",
         "max_batch_size": 10,
         "max_retries": 3,
         // A mail that still fails after its retries is kept here instead of being dropped.
-        "dead_letter_queue": "todo-mail-dead-letter",
+        "dead_letter_queue": "kanban-mail-dead-letter",
       },
       {
-        "queue": "todo-notifications",
+        "queue": "kanban-notifications",
         "max_batch_size": 10,
         "max_retries": 3,
-        "dead_letter_queue": "todo-mail-dead-letter",
+        "dead_letter_queue": "kanban-mail-dead-letter",
       },
     ],
   },

@@ -15,7 +15,7 @@ interface Env {
   APP_URL: string
 }
 
-const NOTIFICATION_QUEUE = 'todo-notifications'
+const NOTIFICATION_QUEUE = 'kanban-notifications'
 const RETRY_DELAY_SECONDS = 60
 
 export default {
