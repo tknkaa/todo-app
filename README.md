@@ -6,11 +6,13 @@ The web app uses shadcn/ui components with Tailwind CSS v4. Add or update compon
 
 Database tables are defined in `packages/db/src/schema.ts`. Generate a migration with `pnpm db:generate`; Wrangler applies the SQL files from `packages/db/migrations` to D1. Cloudflare Worker settings live in `apps/web/wrangler.jsonc` and `apps/reminder-worker/wrangler.jsonc`.
 
-## Architecture
+## Docs
 
-Shared code lives in `packages/db` (Drizzle schema, migrations, D1 repository and the shared `Task`/`ReminderMessage` types). `apps/web` holds the HTTP handlers, auth and UI; pure functions (input validation, formatting) are in `apps/web/src/lib` and covered by Vitest, and handlers are tested against an in-memory SQLite database. `apps/reminder-worker` runs the cron-triggered reminder job.
-
-Run `pnpm check` to execute Oxfmt, Oxlint, TypeScript checks, and Vitest.
+- [全体アーキテクチャ](docs/architecture.md)
+- [Web アプリ仕様](docs/web-app.md)
+- [テーブル定義](docs/database.md)
+- [ワーカー仕様](docs/worker.md)
+- [開発](docs/development.md)
 
 ## Local development
 
