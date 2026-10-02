@@ -45,7 +45,7 @@ pnpm exec wrangler r2 bucket create kanban-files-preview
 pnpm exec wrangler queues create kanban-notifications-preview
 ```
 
-`database_id` を書く場所 (いまは `replace-with-…` になっている):
+`database_id` を書く場所 (ut-code のアカウントに作成済みで、書き込み済み):
 
 - `apps/web/wrangler.jsonc` の `d1_databases` (本番) と `env.preview.d1_databases` (プレビュー)
 - `apps/reminder-worker/wrangler.jsonc` の `d1_databases` (本番。リマインドの対象を探すため、Web と同じ DB を指す)

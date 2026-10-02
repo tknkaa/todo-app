@@ -15,7 +15,7 @@
     {
       "binding": "DB",
       "database_name": "kanban-db",
-      "database_id": "replace-with-production-database-id",
+      "database_id": "5f20a0e8-27aa-46dd-9b4a-aee7ae1a5e9c",
       "migrations_dir": "../../packages/db/migrations",
     },
   ],
