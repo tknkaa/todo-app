@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "kanban-db",
-      "database_id": "replace-with-production-database-id",
+      "database_id": "5f20a0e8-27aa-46dd-9b4a-aee7ae1a5e9c",
       "migrations_dir": "../../packages/db/migrations",
     },
   ],
@@ -56,7 +56,7 @@
         {
           "binding": "DB",
           "database_name": "kanban-db-preview",
-          "database_id": "replace-with-preview-database-id",
+          "database_id": "3e03d55d-c10d-46fc-8014-9adcec53b7b2",
           "migrations_dir": "../../packages/db/migrations",
         },
       ],
