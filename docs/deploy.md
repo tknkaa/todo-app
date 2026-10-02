@@ -97,7 +97,7 @@ pnpm exec wrangler secret put BETTER_AUTH_SECRET --env preview
 
 シークレットを入れた直後は、反映まで数十秒かかる。そのあいだ、古いバージョンが応答して、ログインしているのに 401 になるなど、結果が一定しないことがある。少し待ってから試す。
 
-**プレビューの URL の注意:** ログインは、`BETTER_AUTH_URL` と同じオリジンからのリクエストしか受け付けない。プレビューでログインを試すには、`https://kanban-web-preview.<アカウントのサブドメイン>.workers.dev` のように、**固定の URL** を `BETTER_AUTH_URL` に設定して、その URL で開く。ブランチごとに変わるバージョンの URL (`<ハッシュ>-kanban-web-preview…`) では、ログインできない。
+**プレビューは「ステージング」(1 つの枠):** このアプリの Web は Durable Objects を使っているので、**Cloudflare の「バージョンごとのプレビュー URL」(`wrangler versions upload` で作られる、`<ハッシュ>-kanban-web-preview…`) は作られない** (実際に試して、開けないことを確認した)。そのため、プレビューは、固定の URL (`https://kanban-web-preview.ut-code.workers.dev`) に、`wrangler deploy --env preview` でデプロイして使う。ログインは、`BETTER_AUTH_URL` と同じオリジンからのリクエストしか受け付けないので、この固定の URL を `BETTER_AUTH_URL` に設定してある。
 
 ## 4. 初回のデプロイ
 
@@ -113,18 +113,18 @@ pnpm deploy:preview    # プレビューの Web (Worker を作るため、最初
 
 **`kanban-web`** (本番とプレビューを兼ねる):
 
-| 設定                          | 値                                                                                                                                                                          |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Root directory                | `/`                                                                                                                                                                         |
-| Build command                 | `pnpm install --frozen-lockfile && pnpm --filter @todo/web build`                                                                                                           |
-| Deploy command (`main`)       | `pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db --remote && pnpm --filter @todo/web exec wrangler deploy`                                              |
-| Production branch             | `main`                                                                                                                                                                      |
-| Non-production branch builds  | 有効                                                                                                                                                                        |
-| Non-production deploy command | `pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db-preview --remote --env preview && pnpm --filter @todo/web exec wrangler versions upload --env preview` |
-| Build watch paths             | `apps/web/**`、`packages/**`、`pnpm-lock.yaml`                                                                                                                              |
+| 設定                          | 値                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Root directory                | `/`                                                                                                                                                                |
+| Build command                 | `pnpm install --frozen-lockfile && pnpm --filter @todo/web build`                                                                                                  |
+| Deploy command (`main`)       | `pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db --remote && pnpm --filter @todo/web exec wrangler deploy`                                     |
+| Production branch             | `main`                                                                                                                                                             |
+| Non-production branch builds  | 有効                                                                                                                                                               |
+| Non-production deploy command | `pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db-preview --remote --env preview && pnpm --filter @todo/web exec wrangler deploy --env preview` |
+| Build watch paths             | `apps/web/**`、`packages/**`、`pnpm-lock.yaml`                                                                                                                     |
 
 - `main` に入ると、本番の DB にマイグレーションを適用してから、デプロイする。
-- `main` 以外のブランチや PR は、プレビュー用の DB にマイグレーションを適用して、`kanban-web-preview` の新しいバージョンとして、本番に出さずにアップロードする。ダッシュボードや PR のコメントに、そのバージョンの URL が出る (上の注意のとおり、ログインには固定の URL を使う)。
+- `main` 以外のブランチや PR は、プレビュー用の DB にマイグレーションを適用して、`kanban-web-preview` にデプロイする。**固定の URL に載るのは、最後にビルドされたブランチ 1 つだけ**で、別のブランチをプッシュすると上書きされる。複数の PR を同時に見ることはできないので、PR のコメントにプレビューの URL が出るとは限らない (出なくても、URL は固定なので、そこを開く)。プレビュー用の DB も 1 つを共有するので、列の削除や名前の変更を含む PR を出すと、他のブランチのプレビューが壊れることがある。壊れたら、プレビュー用の DB を作り直す。
 
 **`kanban-reminder-worker`** (本番だけ。プレビューなし):
 
@@ -139,7 +139,7 @@ pnpm deploy:preview    # プレビューの Web (Worker を作るため、最初
 ## 6. 確認すること
 
 - [ ] `main` へのマージで、本番にデプロイされ、マイグレーションが適用される
-- [ ] PR のブランチで、プレビューのバージョンができ、本番のデータに触れない
+- [ ] PR のブランチのビルドが、`kanban-web-preview` にデプロイされ、本番のデータに触れない
 - [ ] 本番で、ログイン、タスクの追加、添付、共有、リアルタイムの反映が動く (WebSocket と Durable Objects は、本番の設定で初めて確かめる)
 - [ ] リマインドの cron が動く (ダッシュボードの Triggers で、実行の履歴を見る)
 - [ ] メールが届く ([ワーカー仕様](worker.md) の「未了」)
