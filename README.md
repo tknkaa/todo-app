@@ -22,3 +22,7 @@ pnpm dev
 ```
 
 `pnpm dev` builds the app and starts it in Wrangler's local Workers runtime so the D1 binding is available. Set `BETTER_AUTH_SECRET` in `apps/web/.dev.vars` to a long random string (`openssl rand -hex 32`). Sign up with email and password in the app; Google OAuth is tracked in a separate issue.
+
+## Inspecting the local database
+
+With [just](https://just.systems) installed: `just tasks`, `just users`, `just tables`, or `just sql "select ..."`. `just migrate` applies migrations.
