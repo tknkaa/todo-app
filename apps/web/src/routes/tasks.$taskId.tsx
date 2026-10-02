@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import type { Task, TaskStatus } from '@todo/db'
+import type { TaskDetail as TaskData, TaskStatus } from '@todo/db'
+import { DescriptionEditor } from '@/components/description-editor'
 import { ReminderFields } from '@/components/reminder-fields'
 import { TaskAttachments } from '@/components/task-attachments'
 import { TaskSharing } from '@/components/task-sharing'
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/tasks/$taskId')({
   component: TaskPage,
 })
 
-type Load = { state: 'loading' } | { state: 'missing' } | { state: 'ready'; task: Task }
+type Load = { state: 'loading' } | { state: 'missing' } | { state: 'ready'; task: TaskData }
 
 function TaskPage() {
   const { taskId } = Route.useParams()
@@ -37,7 +38,7 @@ function TaskDetail({ taskId, userId, email }: { taskId: string; userId: string;
     const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`)
     if (response.status === 404) return { state: 'missing' }
     if (!response.ok) throw new Error(await responseError(response))
-    return { state: 'ready', task: (await response.json()) as Task }
+    return { state: 'ready', task: (await response.json()) as TaskData }
   }, [taskId])
 
   const reload = useCallback(async () => {
@@ -171,7 +172,7 @@ function TaskForm({
   onDelete,
   onLeave,
 }: {
-  task: Task
+  task: TaskData
   isOwner: boolean
   saving: boolean
   onSubmit: (event: FormEvent<HTMLFormElement>, isOwner: boolean) => void
@@ -259,6 +260,17 @@ function TaskForm({
           )}
         </div>
       </form>
+
+      <section className="grid gap-2" aria-labelledby="detail-description">
+        <h2 id="detail-description" className="text-[15px] font-semibold">
+          本文
+        </h2>
+        <DescriptionEditor
+          taskId={task.id}
+          description={task.description}
+          version={task.descriptionVersion}
+        />
+      </section>
 
       {isOwner && (
         <>

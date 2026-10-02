@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestDatabase, insertUser } from '../testing/d1'
+import { D1TaskMemberRepository } from './members'
 import { D1TaskRepository } from './repository'
 import { findDueReminders, markReminderQueued } from './reminders'
 
@@ -209,6 +210,63 @@ describe('status', () => {
       status: 'done',
       completedAt: '2030-01-01T00:00:00.000Z',
     })
+  })
+})
+
+describe('description', () => {
+  async function setup() {
+    const database = createTestDatabase()
+    const repository = new D1TaskRepository(database)
+    await insertUser(database, 'alice')
+    await insertUser(database, 'bob')
+    await repository.create(task('t', 'alice'))
+    return { database, repository }
+  }
+
+  it('starts empty at version 0', async () => {
+    const { repository } = await setup()
+    expect(await repository.findAccessibleDetail('alice', 't')).toMatchObject({
+      description: '',
+      descriptionVersion: 0,
+    })
+  })
+
+  it('saves the text and raises the version', async () => {
+    const { repository } = await setup()
+
+    expect(await repository.updateDescription('alice', 't', '# 手順\n- 買う', 0)).toBe(1)
+    expect(await repository.updateDescription('alice', 't', '# 手順\n- 買う\n- 運ぶ', 1)).toBe(2)
+    expect(await repository.findAccessibleDetail('alice', 't')).toMatchObject({
+      description: '# 手順\n- 買う\n- 運ぶ',
+      descriptionVersion: 2,
+    })
+  })
+
+  it('refuses a save made from an outdated copy and keeps the newer text', async () => {
+    const { repository } = await setup()
+    await repository.updateDescription('alice', 't', 'first', 0)
+
+    expect(await repository.updateDescription('alice', 't', 'stale', 0)).toBeNull()
+    expect((await repository.findAccessibleDetail('alice', 't'))?.description).toBe('first')
+  })
+
+  it('lets a member save but not a stranger', async () => {
+    const { database, repository } = await setup()
+    await new D1TaskMemberRepository(database).addByEmail('t', 'bob@example.com')
+    await insertUser(database, 'carol')
+
+    expect(await repository.updateDescription('bob', 't', 'by bob', 0)).toBe(1)
+    expect(await repository.updateDescription('carol', 't', 'by carol', 1)).toBeNull()
+    expect((await repository.findAccessibleDetail('alice', 't'))?.description).toBe('by bob')
+    expect(await repository.findAccessibleDetail('carol', 't')).toBeNull()
+  })
+
+  it('is not part of the task list', async () => {
+    const { repository } = await setup()
+    await repository.updateDescription('alice', 't', 'body', 0)
+    expect(await repository.listByUser('alice')).toEqual([
+      expect.not.objectContaining({ description: expect.anything() }),
+    ])
   })
 })
 

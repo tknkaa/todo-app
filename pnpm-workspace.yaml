@@ -3,6 +3,11 @@ packages:
   - packages/*
 
 catalog:
+  '@tiptap/extension-list': ^3.31.4
+  '@tiptap/markdown': ^3.31.4
+  '@tiptap/pm': ^3.31.4
+  '@tiptap/react': ^3.31.4
+  '@tiptap/starter-kit': ^3.31.4
   '@cloudflare/workers-types': ^4.20250926.0
   better-auth: ^1.7.7
   '@tailwindcss/vite': ^4.3.3

@@ -216,6 +216,101 @@ describe('handleTasksRequest', () => {
     expect((await tasks.findOwned('alice', id))?.position).toBe(42)
   })
 
+  describe('description', () => {
+    it('is empty at version 0 and returned only with a single task', async () => {
+      const { id } = await create()
+      const detail = (await (await call('GET', `/api/tasks/${id}`)).json()) as Record<
+        string,
+        unknown
+      >
+      expect(detail).toMatchObject({ description: '', descriptionVersion: 0 })
+
+      const listed = (await (await call('GET', '/api/tasks')).json()) as Record<string, unknown>[]
+      expect(listed[0]).not.toHaveProperty('description')
+    })
+
+    it('is saved with the version, which goes up', async () => {
+      const { id } = await create()
+
+      const saved = await call('PATCH', `/api/tasks/${id}`, {
+        description: '# 手順\n- [ ] 買う',
+        descriptionVersion: 0,
+      })
+      expect(saved.status).toBe(200)
+      expect(await saved.json()).toEqual({ descriptionVersion: 1 })
+
+      const detail = await (await call('GET', `/api/tasks/${id}`)).json()
+      expect(detail).toMatchObject({ description: '# 手順\n- [ ] 買う', descriptionVersion: 1 })
+    })
+
+    it('answers 409 and changes nothing when the copy is outdated', async () => {
+      const { id } = await create({ title: 'Original' })
+      await call('PATCH', `/api/tasks/${id}`, { description: 'first', descriptionVersion: 0 })
+      notified = []
+
+      const stale = await call('PATCH', `/api/tasks/${id}`, {
+        title: 'Renamed',
+        description: 'stale',
+        descriptionVersion: 0,
+      })
+      expect(stale.status).toBe(409)
+      expect(await stale.json()).toMatchObject({ code: 'conflict' })
+      expect(await tasks.findAccessibleDetail('alice', id)).toMatchObject({
+        title: 'Original',
+        description: 'first',
+      })
+      expect(notified).toEqual([])
+    })
+
+    it('can be saved together with other changes', async () => {
+      const { id } = await create()
+      await call('PATCH', `/api/tasks/${id}`, {
+        title: 'Both',
+        description: 'text',
+        descriptionVersion: 0,
+      })
+      expect(await tasks.findAccessibleDetail('alice', id)).toMatchObject({
+        title: 'Both',
+        description: 'text',
+      })
+    })
+
+    it('needs the version and a sensible length', async () => {
+      const { id } = await create()
+      expect((await call('PATCH', `/api/tasks/${id}`, { description: 'text' })).status).toBe(400)
+      expect(
+        (
+          await call('PATCH', `/api/tasks/${id}`, {
+            description: 'a'.repeat(20_001),
+            descriptionVersion: 0,
+          })
+        ).status,
+      ).toBe(400)
+    })
+
+    it('can be edited by a member but not by a stranger', async () => {
+      const { id } = await create()
+      await members.addByEmail(id, 'bob@example.com')
+
+      const byMember = await call(
+        'PATCH',
+        `/api/tasks/${id}`,
+        { description: 'by bob', descriptionVersion: 0 },
+        'bob',
+      )
+      expect(byMember.status).toBe(200)
+
+      const byStranger = await call(
+        'PATCH',
+        `/api/tasks/${id}`,
+        { description: 'by carol', descriptionVersion: 1 },
+        'carol',
+      )
+      expect(byStranger.status).toBe(404)
+      expect((await tasks.findAccessibleDetail('alice', id))?.description).toBe('by bob')
+    })
+  })
+
   it('answers 404 for a task that does not exist', async () => {
     expect((await call('GET', '/api/tasks/missing')).status).toBe(404)
   })

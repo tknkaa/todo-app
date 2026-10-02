@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseCreateTaskInput, parseUpdateTaskInput } from './task-input'
+import { MAX_DESCRIPTION_LENGTH, parseCreateTaskInput, parseUpdateTaskInput } from './task-input'
 
 describe('parseCreateTaskInput', () => {
   it('trims the title and converts the deadline to UTC', () => {
@@ -129,4 +129,41 @@ describe('position in task input', () => {
       })
     },
   )
+})
+
+describe('description in task input', () => {
+  it('needs the version it was edited from', () => {
+    expect(parseUpdateTaskInput({ description: '# 手順', descriptionVersion: 3 })).toEqual({
+      ok: true,
+      value: { description: '# 手順', descriptionVersion: 3 },
+    })
+    expect(parseUpdateTaskInput({ description: 'text' })).toEqual({
+      ok: false,
+      message: '本文を保存するには、読み込んだときの版 (descriptionVersion) が必要です。',
+    })
+  })
+
+  it('allows an empty body, to clear it', () => {
+    expect(parseUpdateTaskInput({ description: '', descriptionVersion: 0 }).ok).toBe(true)
+  })
+
+  it('accepts the longest body and rejects a longer one', () => {
+    const longest = 'あ'.repeat(MAX_DESCRIPTION_LENGTH)
+    expect(parseUpdateTaskInput({ description: longest, descriptionVersion: 0 }).ok).toBe(true)
+    expect(parseUpdateTaskInput({ description: longest + 'あ', descriptionVersion: 0 })).toEqual({
+      ok: false,
+      message: '本文は 20,000 文字以内にしてください。',
+    })
+  })
+
+  it.each([-1, 1.5, '1', null])('rejects the version %j', (descriptionVersion) => {
+    expect(parseUpdateTaskInput({ description: 'text', descriptionVersion }).ok).toBe(false)
+  })
+
+  it('does not count a lone version as a change', () => {
+    expect(parseUpdateTaskInput({ descriptionVersion: 1 })).toEqual({
+      ok: false,
+      message: '変更する項目を指定してください。',
+    })
+  })
 })

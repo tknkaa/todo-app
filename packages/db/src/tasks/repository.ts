@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, or, sql, type SQL } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
-import type { Task, TaskStatus } from '../types'
+import type { Task, TaskDetail, TaskStatus } from '../types'
 import { taskMembers, tasks, users } from '../schema'
 
 export type TodoDatabase = D1Database
@@ -42,6 +42,43 @@ export class D1TaskRepository {
       .from(tasks)
       .where(and(eq(tasks.id, taskId), this.accessible(userId)))
     return task ?? null
+  }
+
+  /** The task with its body text. */
+  async findAccessibleDetail(userId: string, taskId: string): Promise<TaskDetail | null> {
+    const [task] = await this.db
+      .select({
+        ...taskColumns,
+        description: tasks.description,
+        descriptionVersion: tasks.descriptionVersion,
+      })
+      .from(tasks)
+      .where(and(eq(tasks.id, taskId), this.accessible(userId)))
+    return task ?? null
+  }
+
+  /**
+   * Saves the body text if `expectedVersion` is still the current one. Returns the new version,
+   * or null when someone else saved first (or the user cannot edit the task).
+   */
+  async updateDescription(
+    userId: string,
+    taskId: string,
+    description: string,
+    expectedVersion: number,
+  ): Promise<number | null> {
+    const [saved] = await this.db
+      .update(tasks)
+      .set({ description, descriptionVersion: sql`${tasks.descriptionVersion} + 1` })
+      .where(
+        and(
+          eq(tasks.id, taskId),
+          eq(tasks.descriptionVersion, expectedVersion),
+          this.accessible(userId),
+        ),
+      )
+      .returning({ version: tasks.descriptionVersion })
+    return saved?.version ?? null
   }
 
   /**

@@ -14,6 +14,9 @@ export type Task = {
   remindBeforeMinutes: number | null
 }
 
+/** A task with its body text, which the board does not need and so does not load. */
+export type TaskDetail = Task & { description: string; descriptionVersion: number }
+
 export type ReminderMessage = {
   taskId: string
   userId: string

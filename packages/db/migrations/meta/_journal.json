@@ -57,6 +57,13 @@
       "when": 1790936995619,
       "tag": "0008_add_task_position",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1790937280620,
+      "tag": "0009_add_task_description",
+      "breakpoints": true
     }
   ]
 }
