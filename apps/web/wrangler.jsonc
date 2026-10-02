@@ -4,6 +4,11 @@
   "main": "dist/server/server.js",
   "compatibility_date": "2026-01-01",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    // The address of the deployed app. Login only accepts requests from this origin, so it has to
+    // match the real address. A local `pnpm dev` takes its own value from apps/web/.dev.vars.
+    "BETTER_AUTH_URL": "https://kanban-web.ut-code.workers.dev",
+  },
   "assets": {
     "directory": "dist/client",
     "binding": "ASSETS",
@@ -52,6 +57,9 @@
   "env": {
     "preview": {
       "name": "kanban-web-preview",
+      "vars": {
+        "BETTER_AUTH_URL": "https://kanban-web-preview.ut-code.workers.dev",
+      },
       "d1_databases": [
         {
           "binding": "DB",
