@@ -1,0 +1,30 @@
+{
+  "name": "@todo/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "typecheck": "vite build && tsc -p tsconfig.json",
+    "deploy": "pnpm build && wrangler deploy"
+  },
+  "dependencies": {
+    "@todo/domain": "workspace:*",
+    "@tanstack/react-start": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/router-devtools": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-tsconfig-paths": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

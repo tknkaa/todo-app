@@ -1,0 +1,12 @@
+{
+  "name": "todo-app",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "dev": "pnpm --filter @todo/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "db:migrate:local": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --local",
+    "db:migrate:remote": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --remote"
+  }
+}

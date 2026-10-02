@@ -1,0 +1,10 @@
+{
+  "name": "@todo/db",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "devDependencies": { "@cloudflare/workers-types": "catalog:", "typescript": "catalog:" },
+  "dependencies": { "@todo/domain": "workspace:*" }
+}
