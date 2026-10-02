@@ -30,7 +30,14 @@ describe('handleMembersRequest', () => {
     members = new D1TaskMemberRepository(database)
     notified = []
     for (const id of ['alice', 'bob', 'carol']) await insertUser(database, id)
-    await tasks.create({ id: 't1', userId: 'alice', title: 'one', dueAt: null, completedAt: null })
+    await tasks.create({
+      id: 't1',
+      userId: 'alice',
+      title: 'one',
+      dueAt: null,
+      completedAt: null,
+      remindBeforeMinutes: null,
+    })
   })
 
   it('shares a task by email and notifies both people', async () => {

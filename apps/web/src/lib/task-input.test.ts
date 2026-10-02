@@ -5,13 +5,20 @@ describe('parseCreateTaskInput', () => {
   it('trims the title and converts the deadline to UTC', () => {
     expect(
       parseCreateTaskInput({ title: '  Submit report  ', dueAt: '2026-10-03T09:30:00+09:00' }),
-    ).toEqual({ ok: true, value: { title: 'Submit report', dueAt: '2026-10-03T00:30:00.000Z' } })
+    ).toEqual({
+      ok: true,
+      value: {
+        title: 'Submit report',
+        dueAt: '2026-10-03T00:30:00.000Z',
+        remindBeforeMinutes: null,
+      },
+    })
   })
 
   it.each([undefined, null, ''])('treats a missing deadline (%j) as null', (dueAt) => {
     expect(parseCreateTaskInput({ title: 'Task', dueAt })).toEqual({
       ok: true,
-      value: { title: 'Task', dueAt: null },
+      value: { title: 'Task', dueAt: null, remindBeforeMinutes: null },
     })
   })
 
@@ -84,5 +91,34 @@ describe('parseUpdateTaskInput', () => {
 
   it('rejects a body that is not an object', () => {
     expect(parseUpdateTaskInput(null).ok).toBe(false)
+  })
+})
+
+describe('reminder setting in task input', () => {
+  it('is off by default when creating', () => {
+    const result = parseCreateTaskInput({ title: 'Task', dueAt: '2030-01-01T00:00:00Z' })
+    expect(result.ok && result.value.remindBeforeMinutes).toBeNull()
+  })
+
+  it('accepts a number of minutes when creating and updating', () => {
+    const created = parseCreateTaskInput({ title: 'Task', remindBeforeMinutes: 1440 })
+    expect(created.ok && created.value.remindBeforeMinutes).toBe(1440)
+    expect(parseUpdateTaskInput({ remindBeforeMinutes: 60 })).toEqual({
+      ok: true,
+      value: { remindBeforeMinutes: 60 },
+    })
+    expect(parseUpdateTaskInput({ remindBeforeMinutes: null })).toEqual({
+      ok: true,
+      value: { remindBeforeMinutes: null },
+    })
+  })
+
+  it.each([0, -5, 1.5, 43_201, '60', true])('rejects %j', (remindBeforeMinutes) => {
+    const message = 'リマインドの時間が正しくありません。'
+    expect(parseCreateTaskInput({ title: 'Task', remindBeforeMinutes })).toEqual({
+      ok: false,
+      message,
+    })
+    expect(parseUpdateTaskInput({ remindBeforeMinutes })).toEqual({ ok: false, message })
   })
 })

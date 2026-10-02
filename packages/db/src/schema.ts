@@ -91,6 +91,7 @@ export const tasks = sqliteTable(
     title: text('title').notNull(),
     dueAt: text('due_at'),
     completedAt: text('completed_at'),
+    remindBeforeMinutes: integer('remind_before_minutes'),
     reminderQueuedAt: text('reminder_queued_at'),
     createdAt: text('created_at')
       .notNull()

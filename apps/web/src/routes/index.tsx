@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Task } from '@todo/db'
+import { ReminderFields } from '@/components/reminder-fields'
 import { TaskAttachments } from '@/components/task-attachments'
 import { TaskSharing } from '@/components/task-sharing'
 import { Button } from '@/components/ui/button'
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { useLive } from '@/hooks/use-live'
 import { authClient } from '@/lib/auth-client'
 import { formatDueDate, toDateTimeLocal } from '@/lib/format'
+import { formatRemindBefore, readReminder } from '@/lib/reminder'
 import { completionTimestamp } from '@/lib/task-input'
 
 export const Route = createFileRoute('/')({
@@ -91,6 +93,7 @@ function TaskBoard({
     const formData = new FormData(form)
     const title = String(formData.get('title') ?? '')
     const dueAtLocal = String(formData.get('dueAt') ?? '')
+    const remindBeforeMinutes = dueAtLocal ? readReminder(formData) : null
     setSaving(true)
     setError('')
     try {
@@ -100,6 +103,7 @@ function TaskBoard({
         body: JSON.stringify({
           title,
           dueAt: dueAtLocal ? new Date(dueAtLocal).toISOString() : null,
+          remindBeforeMinutes,
         }),
       })
       if (!response.ok) throw new Error(await responseError(response))
@@ -144,7 +148,10 @@ function TaskBoard({
     }
   }
 
-  async function saveTask(task: Task, changes: { title: string; dueAt: string | null }) {
+  async function saveTask(
+    task: Task,
+    changes: { title: string; dueAt: string | null; remindBeforeMinutes?: number | null },
+  ) {
     try {
       const response = await fetch(`/api/tasks/${encodeURIComponent(task.id)}`, {
         method: 'PATCH',
@@ -228,6 +235,7 @@ function TaskBoard({
           <Button className="h-11 px-5" type="submit" disabled={saving}>
             {saving ? '追加中…' : '追加する'}
           </Button>
+          <ReminderFields defaultMinutes={null} className="sm:col-span-3" />
         </form>
       </section>
 
@@ -289,7 +297,11 @@ function TaskRow({
   onToggle: () => void
   onRemove: () => void
   onLeave: () => void
-  onSave: (changes: { title: string; dueAt: string | null }) => Promise<boolean>
+  onSave: (changes: {
+    title: string
+    dueAt: string | null
+    remindBeforeMinutes?: number | null
+  }) => Promise<boolean>
 }) {
   const [editing, setEditing] = useState(false)
 
@@ -300,6 +312,8 @@ function TaskRow({
     const saved = await onSave({
       title: String(formData.get('title') ?? ''),
       dueAt: dueAtLocal ? new Date(dueAtLocal).toISOString() : null,
+      // Only the owner may change the reminder, so a member's save leaves it alone.
+      ...(isOwner ? { remindBeforeMinutes: dueAtLocal ? readReminder(formData) : null } : {}),
     })
     if (saved) setEditing(false)
   }
@@ -332,6 +346,9 @@ function TaskRow({
               defaultValue={toDateTimeLocal(task.dueAt)}
               aria-label="締め切り"
             />
+            {isOwner && (
+              <ReminderFields defaultMinutes={task.remindBeforeMinutes} className="sm:col-span-3" />
+            )}
             <div className="flex gap-1">
               <Button className="h-9" type="submit">
                 保存
@@ -356,6 +373,9 @@ function TaskRow({
               </span>
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                 {task.dueAt && <time dateTime={task.dueAt}>{formatDueDate(task.dueAt)}</time>}
+                {task.remindBeforeMinutes !== null && (
+                  <span>リマインド: {formatRemindBefore(task.remindBeforeMinutes)}</span>
+                )}
                 {!isOwner && (
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
                     共有されたタスク

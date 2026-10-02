@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { MAX_REMIND_BEFORE_MINUTES } from './reminder'
 
 const titleMessage = 'タイトルは1〜200文字で入力してください。'
 const dueAtMessage = '締め切りの日時が正しくありません。'
@@ -18,14 +19,27 @@ const dueAtSchema = v.nullable(
   ),
 )
 
+const remindMessage = 'リマインドの時間が正しくありません。'
+
+const remindBeforeSchema = v.nullable(
+  v.pipe(
+    v.number(remindMessage),
+    v.integer(remindMessage),
+    v.minValue(1, remindMessage),
+    v.maxValue(MAX_REMIND_BEFORE_MINUTES, remindMessage),
+  ),
+)
+
 const createTaskSchema = v.object({
   title: titleSchema,
   dueAt: v.optional(dueAtSchema, null),
+  remindBeforeMinutes: v.optional(remindBeforeSchema, null),
 })
 
 const updateTaskSchema = v.object({
   title: v.optional(titleSchema),
   dueAt: v.optional(dueAtSchema),
+  remindBeforeMinutes: v.optional(remindBeforeSchema),
   completed: v.optional(v.boolean('completed は boolean で指定してください。')),
 })
 
@@ -56,8 +70,13 @@ export function parseUpdateTaskInput(input: unknown): UpdateParseResult {
   if (!result.success) {
     return { ok: false, message: result.issues[0]?.message ?? '入力を確認してください。' }
   }
-  const { title, dueAt, completed } = result.output
-  if (title === undefined && dueAt === undefined && completed === undefined) {
+  const { title, dueAt, completed, remindBeforeMinutes } = result.output
+  if (
+    title === undefined &&
+    dueAt === undefined &&
+    completed === undefined &&
+    remindBeforeMinutes === undefined
+  ) {
     return { ok: false, message: '変更する項目を指定してください。' }
   }
   return { ok: true, value: result.output }

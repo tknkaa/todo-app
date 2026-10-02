@@ -1,4 +1,5 @@
 import type { D1TaskMemberRepository, D1TaskRepository } from '@todo/db'
+import { resolveReminder } from '@/lib/reminder'
 import { completionTimestamp, parseCreateTaskInput, parseUpdateTaskInput } from '@/lib/task-input'
 
 /** Tells the given users that the tasks they can see have changed. */
@@ -31,7 +32,19 @@ export async function handleTasksRequest(
       const parsed = parseCreateTaskInput(body)
       if (!parsed.ok) return json({ error: parsed.message }, 400)
 
-      const task = { id: crypto.randomUUID(), userId, completedAt: null, ...parsed.value }
+      const reminder = resolveReminder(
+        { dueAt: null, remindBeforeMinutes: null },
+        { dueAt: parsed.value.dueAt, remindBeforeMinutes: parsed.value.remindBeforeMinutes },
+      )
+      if (!reminder.ok) return json({ error: reminder.message }, 400)
+
+      const task = {
+        id: crypto.randomUUID(),
+        userId,
+        title: parsed.value.title,
+        completedAt: null,
+        ...reminder.value,
+      }
       await deps.tasks.create(task)
       await deps.notify([userId])
       return json(task, 201)
@@ -55,10 +68,24 @@ export async function handleTasksRequest(
     if (!body) return json({ error: 'Invalid JSON body' }, 400)
     const parsed = parseUpdateTaskInput(body)
     if (!parsed.ok) return json({ error: parsed.message }, 400)
-    if (!(await deps.tasks.findAccessible(userId, taskId))) return notFound()
+    const current = await deps.tasks.findAccessible(userId, taskId)
+    if (!current) return notFound()
 
-    const { completed, ...fields } = parsed.value
-    await deps.tasks.update(userId, taskId, fields)
+    const { completed, title, dueAt, remindBeforeMinutes } = parsed.value
+    if (remindBeforeMinutes !== undefined && current.userId !== userId) {
+      return json({ error: 'リマインドを設定できるのはタスクの所有者だけです。' }, 403)
+    }
+    const reminder = resolveReminder(current, { dueAt, remindBeforeMinutes })
+    if (!reminder.ok) return json({ error: reminder.message }, 400)
+
+    await deps.tasks.update(userId, taskId, {
+      title,
+      dueAt,
+      remindBeforeMinutes:
+        reminder.value.remindBeforeMinutes === current.remindBeforeMinutes
+          ? undefined
+          : reminder.value.remindBeforeMinutes,
+    })
     if (completed !== undefined) {
       await deps.tasks.setCompleted(userId, taskId, completionTimestamp(completed, now()))
     }
