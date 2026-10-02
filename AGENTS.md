@@ -51,7 +51,7 @@ just sql "select * from tasks"   # ローカルの D1 を見る
 
 - **Worker のエントリ (`apps/web/src/server.tsx`) の export は `default` と `CollaborationRoom` だけにする。** Workers は export をすべてハンドラかクラスとして扱う。`vite.config.ts` の `preserveEntrySignatures: 'strict'` を外さない。
 - WebSocket の `close()` に、1005 と 1006 は渡せない (`replyCloseCode` を使う)。
-- ドラッグ中のカードは、`display: none` にしない。Chrome がドラッグを取り消す。
+- ドラッグ中のカードは、`display: none` にしない (Chrome がドラッグを取り消す)。高さを 0 にもしない (下のカードが動いてページの高さが縮み、ポインタの下にあるものがずれて、ドロップが外れる)。`opacity-0` で、場所を保ったまま見えなくする。
 - Tailwind では、`p-3.5` と `p-0` のように、同じ項目のクラスを両方付けない。優先は定義順で決まる。条件で丸ごと切り替える。
 - 色は白・灰・黒だけ。`--destructive` の赤は、エラーと削除にだけ使う。
 

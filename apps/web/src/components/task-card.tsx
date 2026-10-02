@@ -61,14 +61,15 @@ export function TaskCard({
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <li
       data-task-id={task.id}
-      className={`grid cursor-grab gap-2 rounded-xl bg-card shadow-xs active:cursor-grabbing${dragging ? ' -mt-2 h-0 overflow-hidden opacity-0' : ' border p-3.5'}${indicator === 'before' ? ' shadow-[0_-4px_0_0_var(--foreground)]' : ''}${indicator === 'after' ? ' shadow-[0_4px_0_0_var(--foreground)]' : ''}`}
+      className={`grid cursor-grab gap-2 rounded-xl border bg-card p-3.5 shadow-xs active:cursor-grabbing${dragging ? ' opacity-0' : ''}${indicator === 'before' ? ' shadow-[0_-4px_0_0_var(--foreground)]' : ''}${indicator === 'after' ? ' shadow-[0_4px_0_0_var(--foreground)]' : ''}`}
       draggable={!editing}
       onDragStart={(event) => {
         event.dataTransfer.setData('text/plain', task.id)
         event.dataTransfer.effectAllowed = 'move'
-        // Hide the original after the browser has taken its drag image. Hiding it right away
-        // cancels the drag, and so does `display: none`, so collapse it instead (the negative
-        // margin cancels the grid gap it would leave).
+        // Hide the original after the browser has taken its drag image: hiding it right away
+        // cancels the drag. It only turns invisible and keeps its place. Removing it (display
+        // none) cancels the drag, and shrinking it makes the cards below jump and the page
+        // scroll, so the card the pointer is over is no longer where it was.
         setTimeout(onDragStart, 0)
       }}
       onDragEnd={onDragEnd}

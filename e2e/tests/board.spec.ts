@@ -3,6 +3,10 @@ import { addTask, card, cardById, column, signUp, titles } from './helpers'
 
 // Smoke tests of the board. How cards are laid out and exactly where a drop lands are left out on
 // purpose: they are still changing, and unit tests cover the ordering rules.
+// The board starts below the header, and a drag needs both cards on screen at once, so use a tall
+// window instead of scrolling in the middle of a drag.
+test.use({ viewport: { width: 1280, height: 1200 } })
+
 test.describe('the board', () => {
   test.beforeEach(async ({ page }) => {
     await signUp(page)
@@ -35,6 +39,49 @@ test.describe('the board', () => {
 
     await page.reload()
     await expect.poll(() => titles(page, 'doing')).toEqual(['ドラッグ'])
+  })
+
+  test('drops a card before or after the card it is dropped on', async ({ page }) => {
+    for (const title of ['C', 'B', 'A']) await addTask(page, title)
+    await expect.poll(() => titles(page, 'todo')).toEqual(['A', 'B', 'C'])
+
+    // C onto the upper half of A goes first; then onto the lower half of B goes last again.
+    await card(page, 'C').dragTo(card(page, 'A'), { targetPosition: { x: 40, y: 6 } })
+    await expect.poll(() => titles(page, 'todo')).toEqual(['C', 'A', 'B'])
+
+    const height = (await card(page, 'B').boundingBox())!.height
+    await card(page, 'C').dragTo(card(page, 'B'), { targetPosition: { x: 40, y: height - 6 } })
+    await expect.poll(() => titles(page, 'todo')).toEqual(['A', 'B', 'C'])
+
+    await page.reload()
+    await expect.poll(() => titles(page, 'todo')).toEqual(['A', 'B', 'C'])
+  })
+
+  test('drops a card between two cards of another column', async ({ page }) => {
+    for (const title of ['Y', 'Z']) {
+      await addTask(page, title)
+      await card(page, title).getByLabel(`${title}のステータス`).selectOption('doing')
+    }
+    await addTask(page, 'M')
+    await expect.poll(() => titles(page, 'doing')).toEqual(['Y', 'Z'])
+
+    await card(page, 'M').dragTo(card(page, 'Z'), { targetPosition: { x: 40, y: 6 } })
+    await expect.poll(() => titles(page, 'doing')).toEqual(['Y', 'M', 'Z'])
+    await expect.poll(() => titles(page, 'todo')).toEqual([])
+  })
+
+  test('leaves the card where it was when it is dropped on itself or nowhere', async ({ page }) => {
+    for (const title of ['B', 'A']) await addTask(page, title)
+
+    // Grab B by its padding (the middle of a card is a link, which would be a click, not a drag).
+    await card(page, 'B').dragTo(card(page, 'B'), {
+      sourcePosition: { x: 6, y: 6 },
+      targetPosition: { x: 60, y: 8 },
+    })
+    await card(page, 'A').dragTo(page.getByRole('heading', { name: 'タスクを追加' }))
+    await expect.poll(() => titles(page, 'todo')).toEqual(['A', 'B'])
+    await expect(card(page, 'A')).toBeVisible()
+    await expect(card(page, 'B')).toBeVisible()
   })
 
   test('edits and deletes a task', async ({ page }) => {
