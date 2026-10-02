@@ -94,7 +94,7 @@ pnpm exec wrangler preview base-config secret put BETTER_AUTH_SECRET      # 全�
 | Non-production deploy command | `./scripts/deploy-preview.sh`                                                                                                  |
 | Build watch paths             | `apps/web/**`、`packages/**`、`scripts/**`、`pnpm-lock.yaml`                                                                   |
 
-`scripts/deploy-preview.sh` は、ビルドの環境変数 `WORKERS_CI_BRANCH` からブランチ名を読む。プレビュー用の D1 にマイグレーションを適用してから、`wrangler preview` でプレビューを作る。
+`scripts/deploy-preview.sh` は、ビルドの環境変数 `WORKERS_CI_BRANCH` からブランチ名を読む。Node で `.ts` を直接動かすので、Node 24 を使う (`.node-version`。Workers Builds も CI もこれに従う)。プレビュー用の D1 にマイグレーションを適用してから、`wrangler preview` でプレビューを作る。
 
 **`kanban-reminder-worker`** (本番だけ):
 
