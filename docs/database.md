@@ -76,15 +76,16 @@ Cloudflare D1 (SQLite)。スキーマは `packages/db/src/schema.ts` (Drizzle)�
 
 タスク。仕様は [Web アプリ仕様](web-app.md)、リマインドは [ワーカー仕様](worker.md) を参照。
 
-| 列                   | 型   | 制約                      | 内容                                            |
-| -------------------- | ---- | ------------------------- | ----------------------------------------------- |
-| `id`                 | TEXT | PK                        | UUID                                            |
-| `user_id`            | TEXT | NOT NULL、FK → `users.id` | 所有者                                          |
-| `title`              | TEXT | NOT NULL                  | 1〜200 文字 (アプリ側で検証)                    |
-| `due_at`             | TEXT |                           | 締め切り (UTC の ISO 8601)                      |
-| `completed_at`       | TEXT |                           | 完了日時。未完了は NULL                         |
-| `reminder_queued_at` | TEXT |                           | リマインドをキューに積んだ日時。NULL なら未処理 |
-| `created_at`         | TEXT | NOT NULL                  |                                                 |
+| 列                      | 型      | 制約                      | 内容                                                                                              |
+| ----------------------- | ------- | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `id`                    | TEXT    | PK                        | UUID                                                                                              |
+| `user_id`               | TEXT    | NOT NULL、FK → `users.id` | 所有者                                                                                            |
+| `title`                 | TEXT    | NOT NULL                  | 1〜200 文字 (アプリ側で検証)                                                                      |
+| `due_at`                | TEXT    |                           | 締め切り (UTC の ISO 8601)                                                                        |
+| `completed_at`          | TEXT    |                           | 完了日時。未完了は NULL                                                                           |
+| `remind_before_minutes` | INTEGER |                           | 締め切りの何分前にリマインドするか。NULL はリマインドなし                                         |
+| `reminder_queued_at`    | TEXT    |                           | リマインドをキューに積んだ日時。NULL なら未処理。締め切りかリマインドの設定を変えると NULL に戻る |
+| `created_at`            | TEXT    | NOT NULL                  |                                                                                                   |
 
 インデックス: `tasks_due_at_idx` (`due_at`, `completed_at`, `reminder_queued_at`)。リマインドの検索用。
 
