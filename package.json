@@ -1,6 +1,7 @@
 {
   "name": "kanban",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "pnpm --filter @todo/web dev",
     "build": "pnpm -r build",
@@ -14,11 +15,11 @@
     "db:migrate:local": "pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db --local --persist-to .wrangler/state-drizzle-baseline",
     "db:migrate:remote": "pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db --remote",
     "test:e2e": "playwright test",
-    "db:migrate:preview": "pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db-preview --remote --env preview",
+    "db:migrate:preview": "pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db-preview --remote --config wrangler.preview-migrations.jsonc",
     "deploy:web": "pnpm --filter @todo/web run deploy",
-    "deploy:preview": "pnpm --filter @todo/web build && pnpm --filter @todo/web exec wrangler deploy --env preview",
+    "deploy:preview": "./scripts/deploy-preview.sh",
     "deploy:worker": "pnpm --filter @todo/reminder-worker run deploy",
-    "check:deploy": "pnpm --filter @todo/web build && pnpm --filter @todo/web exec wrangler deploy --dry-run --outdir .wrangler/dry-run && pnpm --filter @todo/web exec wrangler deploy --dry-run --env preview --outdir .wrangler/dry-run-preview && pnpm --filter @todo/reminder-worker exec wrangler deploy --dry-run --outdir .wrangler/dry-run"
+    "check:deploy": "pnpm --filter @todo/web build && pnpm --filter @todo/web exec wrangler deploy --dry-run --outdir .wrangler/dry-run && pnpm --filter @todo/reminder-worker exec wrangler deploy --dry-run --outdir .wrangler/dry-run"
   },
   "devDependencies": {
     "@playwright/test": "catalog:",

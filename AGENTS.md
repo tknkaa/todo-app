@@ -9,7 +9,7 @@ pnpm check                 # フォーマット、lint、型チェック、テ�
 pnpm test:e2e              # 本物のブラウザでの E2E (Chrome が必要。空の DB で別のポート 8788 に起動する)
 pnpm format                # Oxfmt で整形
 pnpm test                  # Vitest (apps/web、apps/reminder-worker、packages/db)
-pnpm check:deploy          # Wrangler の設定 (本番、プレビュー、ワーカー) が読めることの確認。アップロードはしない
+pnpm check:deploy          # Wrangler の設定 (Web とメールの Worker) が読めることの確認。アップロードはしない
 pnpm db:generate --name=<内容が分かる名前>   # マイグレーションを生成
 pnpm db:migrate:local      # ローカルの D1 に適用
 pnpm dev                   # ビルドして wrangler dev (http://localhost:8787)

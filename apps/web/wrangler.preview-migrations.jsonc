@@ -1,0 +1,14 @@
+{
+  // Only for applying migrations to the preview database, which all Worker Previews share
+  // (`wrangler d1 migrations apply` does not read the `previews` block of wrangler.jsonc).
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "kanban-web",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kanban-db-preview",
+      "database_id": "3e03d55d-c10d-46fc-8014-9adcec53b7b2",
+      "migrations_dir": "../../packages/db/migrations",
+    },
+  ],
+}
