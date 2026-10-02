@@ -6,16 +6,17 @@ Cloudflare (ut-code のアカウント `ut.code();`) へのデプロイとプレ
 
 ## いまの状態
 
-|                                                | 状態                                                                                                                              |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 本番の Web (`kanban-web`)                      | デプロイ済み: https://kanban-web.ut-code.workers.dev                                                                              |
-| メールを送る Worker (`kanban-reminder-worker`) | デプロイ済み (cron は 15 分ごと)。公開 URL はない (`workers_dev: false`)                                                          |
-| プレビュー                                     | Worker Previews。ブランチごとに `https://<ブランチ名>-kanban-web.ut-code.workers.dev`                                             |
-| リソース                                       | D1 2 個、R2 2 個、キュー 4 つ (下の表)。マイグレーションは本番とプレビューの両方に適用済み                                        |
-| シークレット                                   | `BETTER_AUTH_SECRET` を、本番とプレビュー (全プレビュー共通) に設定済み (別の値)                                                  |
-| Workers Builds                                 | ダッシュボードで設定済み (下の 4 の値)                                                                                            |
-| メール (Resend)                                | **未設定** ([#8](https://github.com/ut-code/kanban/issues/8))。それまで、本番のメールの送信は失敗して、デッドレターキューに溜まる |
-| Google ログイン                                | **未設定** ([#2](https://github.com/ut-code/kanban/issues/2))                                                                     |
+|                                                | 状態                                                                                                                                           |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 本番の Web (`kanban-web`)                      | デプロイ済み: https://kanban-web.ut-code.workers.dev                                                                                           |
+| メールを送る Worker (`kanban-reminder-worker`) | デプロイ済み (cron は 15 分ごと)。公開 URL はない (`workers_dev: false`)                                                                       |
+| プレビュー                                     | Worker Previews。ブランチごとに `https://<ブランチ名>-kanban-web.ut-code.workers.dev`                                                          |
+| リソース                                       | D1 2 個、R2 2 個、キュー 4 つ (下の表)。マイグレーションは本番とプレビューの両方に適用済み                                                     |
+| シークレット                                   | `BETTER_AUTH_SECRET` を、本番とプレビュー (全プレビュー共通) に設定済み (別の値)                                                               |
+| Workers Builds                                 | ダッシュボードで設定済み (下の 4 の値)                                                                                                         |
+| ビルドのトークン                               | `kanban-deploy` (`kanban-web` の本番とプレビュー)、`kanban-reminder-deploy` (`kanban-reminder-worker`)。ほかのプロジェクトのトークンは使わない |
+| メール (Resend)                                | **未設定** ([#8](https://github.com/ut-code/kanban/issues/8))。それまで、本番のメールの送信は失敗して、デッドレターキューに溜まる              |
+| Google ログイン                                | **未設定** ([#2](https://github.com/ut-code/kanban/issues/2))                                                                                  |
 
 ## 名前
 
