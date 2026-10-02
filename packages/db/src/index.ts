@@ -1,5 +1,6 @@
 export { D1TaskRepository } from './tasks/repository'
 export { D1AttachmentRepository } from './tasks/attachments'
+export { D1TaskMemberRepository } from './tasks/members'
 export { findDueReminders, markReminderQueued } from './tasks/reminders'
 export type { TodoDatabase } from './tasks/repository'
-export type { Attachment, ReminderMessage, Task } from './types'
+export type { Attachment, ReminderMessage, Task, TaskMember } from './types'

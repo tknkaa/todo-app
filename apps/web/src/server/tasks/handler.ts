@@ -1,17 +1,27 @@
-import type { D1TaskRepository } from '@todo/db'
-import { completionTimestamp, parseCreateTaskInput } from '@/lib/task-input'
+import type { D1TaskMemberRepository, D1TaskRepository } from '@todo/db'
+import { completionTimestamp, parseCreateTaskInput, parseUpdateTaskInput } from '@/lib/task-input'
+
+/** Tells the given users that the tasks they can see have changed. */
+export type Notify = (userIds: string[]) => Promise<void>
+
+export interface TaskDeps {
+  tasks: D1TaskRepository
+  members: D1TaskMemberRepository
+  notify: Notify
+  now?: () => Date
+}
 
 export async function handleTasksRequest(
   request: Request,
-  repository: D1TaskRepository,
+  deps: TaskDeps,
   userId: string,
-  now: () => Date = () => new Date(),
 ): Promise<Response> {
   const { pathname } = new URL(request.url)
+  const now = deps.now ?? (() => new Date())
 
   if (pathname === '/api/tasks') {
     if (request.method === 'GET') {
-      return json(await repository.listByUser(userId))
+      return json(await deps.tasks.listByUser(userId))
     }
 
     if (request.method === 'POST') {
@@ -22,7 +32,8 @@ export async function handleTasksRequest(
       if (!parsed.ok) return json({ error: parsed.message }, 400)
 
       const task = { id: crypto.randomUUID(), userId, completedAt: null, ...parsed.value }
-      await repository.create(task)
+      await deps.tasks.create(task)
+      await deps.notify([userId])
       return json(task, 201)
     }
 
@@ -42,19 +53,32 @@ export async function handleTasksRequest(
   if (request.method === 'PATCH') {
     const body = await readJsonObject(request)
     if (!body) return json({ error: 'Invalid JSON body' }, 400)
-    if (typeof body.completed !== 'boolean') {
-      return json({ error: 'completed は boolean で指定してください。' }, 400)
+    const parsed = parseUpdateTaskInput(body)
+    if (!parsed.ok) return json({ error: parsed.message }, 400)
+    if (!(await deps.tasks.findAccessible(userId, taskId))) return notFound()
+
+    const { completed, ...fields } = parsed.value
+    await deps.tasks.update(userId, taskId, fields)
+    if (completed !== undefined) {
+      await deps.tasks.setCompleted(userId, taskId, completionTimestamp(completed, now()))
     }
-    await repository.setCompleted(userId, taskId, completionTimestamp(body.completed, now()))
+    await deps.notify(await deps.members.accessUserIds(taskId))
     return new Response(null, { status: 204 })
   }
 
   if (request.method === 'DELETE') {
-    await repository.delete(userId, taskId)
+    if (!(await deps.tasks.findOwned(userId, taskId))) return notFound()
+    const audience = await deps.members.accessUserIds(taskId)
+    await deps.tasks.delete(userId, taskId)
+    await deps.notify(audience)
     return new Response(null, { status: 204 })
   }
 
   return json({ error: 'Method not allowed' }, 405, { Allow: 'PATCH, DELETE' })
+}
+
+function notFound() {
+  return json({ error: 'タスクが見つかりません。' }, 404)
 }
 
 async function readJsonObject(request: Request): Promise<Record<string, unknown> | null> {

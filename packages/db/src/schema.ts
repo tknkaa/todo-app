@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { customType, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { customType, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 const authTimestamp = customType<{ data: Date; driverData: string }>({
   dataType: () => 'text',
@@ -123,4 +123,23 @@ export const attachments = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [index('attachments_task_id_idx').on(table.taskId)],
+)
+
+export const taskMembers = sqliteTable(
+  'task_members',
+  {
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    primaryKey({ columns: [table.taskId, table.userId] }),
+    index('task_members_user_id_idx').on(table.userId),
+  ],
 )

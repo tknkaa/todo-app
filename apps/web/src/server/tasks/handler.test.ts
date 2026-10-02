@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { D1TaskRepository, type Task } from '@todo/db'
+import { D1TaskMemberRepository, D1TaskRepository, type Task } from '@todo/db'
 import { createTestDatabase, insertUser } from '@todo/db/testing'
 import { handleTasksRequest } from './handler'
 
 const now = () => new Date('2026-10-02T01:02:03.000Z')
 
 describe('handleTasksRequest', () => {
-  let repository: D1TaskRepository
+  let tasks: D1TaskRepository
+  let members: D1TaskMemberRepository
+  let notified: string[][]
 
   const call = (method: string, path: string, body?: unknown, userId = 'alice') =>
     handleTasksRequest(
@@ -14,14 +16,24 @@ describe('handleTasksRequest', () => {
         method,
         body: body === undefined ? undefined : JSON.stringify(body),
       }),
-      repository,
+      {
+        tasks,
+        members,
+        now,
+        notify: async (userIds) => {
+          notified.push([...userIds].sort())
+        },
+      },
       userId,
-      now,
     )
+  const create = async (body: unknown = { title: 'Task' }, userId = 'alice') =>
+    (await (await call('POST', '/api/tasks', body, userId)).json()) as Task
 
   beforeEach(async () => {
     const database = createTestDatabase()
-    repository = new D1TaskRepository(database)
+    tasks = new D1TaskRepository(database)
+    members = new D1TaskMemberRepository(database)
+    notified = []
     await insertUser(database, 'alice')
     await insertUser(database, 'bob')
   })
@@ -48,7 +60,8 @@ describe('handleTasksRequest', () => {
     const response = await call('POST', '/api/tasks', { title: '   ' })
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({ error: 'タイトルは1〜200文字で入力してください。' })
-    expect(await repository.listByUser('alice')).toEqual([])
+    expect(await tasks.listByUser('alice')).toEqual([])
+    expect(notified).toEqual([])
   })
 
   it('rejects a body that is not a JSON object', async () => {
@@ -57,34 +70,73 @@ describe('handleTasksRequest', () => {
   })
 
   it('completes and reopens a task with the current time', async () => {
-    const { id } = (await (await call('POST', '/api/tasks', { title: 'Task' })).json()) as Task
+    const { id } = await create()
 
     expect((await call('PATCH', `/api/tasks/${id}`, { completed: true })).status).toBe(204)
-    expect((await repository.listByUser('alice'))[0]?.completedAt).toBe('2026-10-02T01:02:03.000Z')
+    expect((await tasks.listByUser('alice'))[0]?.completedAt).toBe('2026-10-02T01:02:03.000Z')
 
     await call('PATCH', `/api/tasks/${id}`, { completed: false })
-    expect((await repository.listByUser('alice'))[0]?.completedAt).toBeNull()
+    expect((await tasks.listByUser('alice'))[0]?.completedAt).toBeNull()
   })
 
-  it('requires completed to be a boolean', async () => {
-    const response = await call('PATCH', '/api/tasks/x', { completed: 'yes' })
-    expect(response.status).toBe(400)
+  it('edits the title and deadline, and clears the deadline', async () => {
+    const { id } = await create({ title: 'Task', dueAt: '2030-01-01T00:00:00.000Z' })
+
+    await call('PATCH', `/api/tasks/${id}`, { title: '  Renamed ' })
+    expect(await tasks.findAccessible('alice', id)).toMatchObject({
+      title: 'Renamed',
+      dueAt: '2030-01-01T00:00:00.000Z',
+    })
+
+    await call('PATCH', `/api/tasks/${id}`, { dueAt: null })
+    expect((await tasks.findAccessible('alice', id))?.dueAt).toBeNull()
   })
 
-  it('does not let another user change or delete a task', async () => {
-    const { id } = (await (await call('POST', '/api/tasks', { title: 'Task' })).json()) as Task
+  it('validates updates', async () => {
+    const { id } = await create()
+    expect((await call('PATCH', `/api/tasks/${id}`, { completed: 'yes' })).status).toBe(400)
+    expect((await call('PATCH', `/api/tasks/${id}`, {})).status).toBe(400)
+    expect((await call('PATCH', `/api/tasks/${id}`, { title: ' ' })).status).toBe(400)
+  })
 
-    await call('PATCH', `/api/tasks/${id}`, { completed: true }, 'bob')
-    await call('DELETE', `/api/tasks/${id}`, undefined, 'bob')
+  it('answers 404 when another user changes or deletes a task', async () => {
+    const { id } = await create()
 
-    const [task] = await repository.listByUser('alice')
-    expect(task?.completedAt).toBeNull()
+    expect((await call('PATCH', `/api/tasks/${id}`, { completed: true }, 'bob')).status).toBe(404)
+    expect((await call('DELETE', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(404)
+    expect((await tasks.listByUser('alice'))[0]?.completedAt).toBeNull()
   })
 
   it('deletes the owner’s task', async () => {
-    const { id } = (await (await call('POST', '/api/tasks', { title: 'Task' })).json()) as Task
+    const { id } = await create()
     expect((await call('DELETE', `/api/tasks/${id}`)).status).toBe(204)
-    expect(await repository.listByUser('alice')).toEqual([])
+    expect(await tasks.listByUser('alice')).toEqual([])
+  })
+
+  it('lets a member edit a shared task but not delete it', async () => {
+    const { id } = await create()
+    await members.add(id, 'bob')
+
+    expect(
+      ((await (await call('GET', '/api/tasks', undefined, 'bob')).json()) as Task[]).length,
+    ).toBe(1)
+    expect((await call('PATCH', `/api/tasks/${id}`, { title: 'By Bob' }, 'bob')).status).toBe(204)
+    expect((await tasks.findAccessible('alice', id))?.title).toBe('By Bob')
+    expect((await call('DELETE', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(404)
+  })
+
+  it('notifies everyone who can see the task about changes', async () => {
+    const { id } = await create()
+    await members.add(id, 'bob')
+    notified = []
+
+    await call('PATCH', `/api/tasks/${id}`, { completed: true }, 'bob')
+    await call('DELETE', `/api/tasks/${id}`)
+
+    expect(notified).toEqual([
+      ['alice', 'bob'],
+      ['alice', 'bob'],
+    ])
   })
 
   it('answers unknown routes and methods', async () => {

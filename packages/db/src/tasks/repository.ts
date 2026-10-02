@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, or, sql, type SQL } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import type { Task } from '../types'
-import { tasks, users } from '../schema'
+import { taskMembers, tasks, users } from '../schema'
 
 export type TodoDatabase = D1Database
 
@@ -18,7 +18,7 @@ export class D1TaskRepository {
         completedAt: tasks.completedAt,
       })
       .from(tasks)
-      .where(eq(tasks.userId, userId))
+      .where(this.accessible(userId))
       .orderBy(
         sql`case when ${tasks.completedAt} is not null then 1 else 0 end`,
         sql`case when ${tasks.dueAt} is null then 1 else 0 end`,
@@ -41,6 +41,31 @@ export class D1TaskRepository {
     return task ?? null
   }
 
+  /** The task if the user owns it or it is shared with them. */
+  async findAccessible(userId: string, taskId: string): Promise<Task | null> {
+    const [task] = await this.db
+      .select({
+        id: tasks.id,
+        userId: tasks.userId,
+        title: tasks.title,
+        dueAt: tasks.dueAt,
+        completedAt: tasks.completedAt,
+      })
+      .from(tasks)
+      .where(and(eq(tasks.id, taskId), this.accessible(userId)))
+    return task ?? null
+  }
+
+  /** Changes only the given fields, so concurrent edits of different fields both survive. */
+  async update(userId: string, taskId: string, changes: { title?: string; dueAt?: string | null }) {
+    if (changes.title === undefined && changes.dueAt === undefined) return
+    await this.db
+      .update(tasks)
+      .set(changes)
+      .where(and(eq(tasks.id, taskId), this.accessible(userId)))
+      .run()
+  }
+
   async create(task: Task) {
     await this.db.insert(tasks).values(task).run()
   }
@@ -49,7 +74,7 @@ export class D1TaskRepository {
     await this.db
       .update(tasks)
       .set({ completedAt })
-      .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+      .where(and(eq(tasks.id, taskId), this.accessible(userId)))
       .run()
   }
 
@@ -60,7 +85,19 @@ export class D1TaskRepository {
       .run()
   }
 
+  private accessible(userId: string): SQL {
+    return or(
+      eq(tasks.userId, userId),
+      exists(
+        this.db
+          .select({ one: sql`1` })
+          .from(taskMembers)
+          .where(and(eq(taskMembers.taskId, tasks.id), eq(taskMembers.userId, userId))),
+      ),
+    ) as SQL
+  }
+
   private get db() {
-    return drizzle(this.database, { schema: { tasks, users } })
+    return drizzle(this.database, { schema: { tasks, users, taskMembers } })
   }
 }
