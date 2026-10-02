@@ -14,6 +14,24 @@ function Login() {
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const [github, setGithub] = useState(false)
+
+  // Which sign-in buttons exist depends on what the server has been given keys for.
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetch('/api/config')
+        const config = (await response.json()) as { github?: boolean }
+        if (active) setGithub(config.github === true)
+      } catch {
+        // No config means no extra buttons.
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (session) void navigate({ to: '/' })
@@ -77,6 +95,16 @@ function Login() {
           {mode === 'signIn' ? 'ログイン' : '登録する'}
         </Button>
       </form>
+      {github && (
+        <Button
+          className="mt-3 h-11 w-full"
+          variant="outline"
+          type="button"
+          onClick={() => void authClient.signIn.social({ provider: 'github', callbackURL: '/' })}
+        >
+          GitHub でログイン
+        </Button>
+      )}
       <Button
         variant="ghost"
         className="mt-4 w-full text-muted-foreground"

@@ -34,4 +34,11 @@ test.describe('signing in', () => {
     await expect(page.getByRole('alert')).toBeVisible()
     await expect(page).toHaveURL(/\/login$/)
   })
+
+  test('shows the GitHub button only when the server has keys for it', async ({ page }) => {
+    // The test server is started without GitHub keys.
+    await page.goto('/login')
+    expect(await (await page.request.get('/api/config')).json()).toEqual({ github: false })
+    await expect(page.getByRole('button', { name: /GitHub/ })).toHaveCount(0)
+  })
 })

@@ -6,6 +6,7 @@ import {
   type NotificationMessage,
 } from '@todo/db'
 import { getAuth } from './server/auth'
+import { publicConfig } from './server/auth-config'
 import {
   deleteTaskAttachments,
   handleAttachmentsRequest,
@@ -26,11 +27,16 @@ interface Env {
   NOTIFICATION_QUEUE: Queue<NotificationMessage>
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL?: string
+  GITHUB_CLIENT_ID?: string
+  GITHUB_CLIENT_SECRET?: string
 }
 
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url)
+    if (url.pathname === '/api/config') {
+      return Response.json(publicConfig(env))
+    }
     if (url.pathname.startsWith('/api/auth/')) {
       return getAuth(env).handler(request)
     }

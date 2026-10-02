@@ -1,2 +1,6 @@
 BETTER_AUTH_SECRET=replace-with-a-long-random-string
 BETTER_AUTH_URL=http://localhost:8787
+
+# Optional: set both to show "GitHub でログイン". See docs/web-app.md for how to get them.
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=

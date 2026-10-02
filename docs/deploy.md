@@ -6,17 +6,17 @@ Cloudflare (ut-code のアカウント `ut.code();`) へのデプロイとプレ
 
 ## いまの状態
 
-|                                                | 状態                                                                                                                                           |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 本番の Web (`kanban-web`)                      | デプロイ済み: https://kanban-web.ut-code.workers.dev                                                                                           |
-| メールを送る Worker (`kanban-reminder-worker`) | デプロイ済み (cron は 15 分ごと)。公開 URL はない (`workers_dev: false`)                                                                       |
-| プレビュー                                     | Worker Previews。ブランチごとに `https://<ブランチ名>-kanban-web.ut-code.workers.dev`                                                          |
-| リソース                                       | D1 2 個、R2 2 個、キュー 4 つ (下の表)。マイグレーションは本番とプレビューの両方に適用済み                                                     |
-| シークレット                                   | `BETTER_AUTH_SECRET` を、本番とプレビュー (全プレビュー共通) に設定済み (別の値)                                                               |
-| Workers Builds                                 | ダッシュボードで設定済み (下の 4 の値)                                                                                                         |
-| ビルドのトークン                               | `kanban-deploy` (`kanban-web` の本番とプレビュー)、`kanban-reminder-deploy` (`kanban-reminder-worker`)。ほかのプロジェクトのトークンは使わない |
-| メール (Resend)                                | **未設定** ([#8](https://github.com/ut-code/kanban/issues/8))。それまで、本番のメールの送信は失敗して、デッドレターキューに溜まる              |
-| Google ログイン                                | **未設定** ([#2](https://github.com/ut-code/kanban/issues/2))                                                                                  |
+|                                                | 状態                                                                                                                                                              |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 本番の Web (`kanban-web`)                      | デプロイ済み: https://kanban-web.ut-code.workers.dev                                                                                                              |
+| メールを送る Worker (`kanban-reminder-worker`) | デプロイ済み (cron は 15 分ごと)。公開 URL はない (`workers_dev: false`)                                                                                          |
+| プレビュー                                     | Worker Previews。ブランチごとに `https://<ブランチ名>-kanban-web.ut-code.workers.dev`                                                                             |
+| リソース                                       | D1 2 個、R2 2 個、キュー 4 つ (下の表)。マイグレーションは本番とプレビューの両方に適用済み                                                                        |
+| シークレット                                   | `BETTER_AUTH_SECRET` を、本番とプレビュー (全プレビュー共通) に設定済み (別の値)                                                                                  |
+| Workers Builds                                 | ダッシュボードで設定済み (下の 4 の値)                                                                                                                            |
+| ビルドのトークン                               | `kanban-deploy` (`kanban-web` の本番とプレビュー)、`kanban-reminder-deploy` (`kanban-reminder-worker`)。ほかのプロジェクトのトークンは使わない                    |
+| メール (Resend)                                | **未設定** ([#8](https://github.com/ut-code/kanban/issues/8))。それまで、本番のメールの送信は失敗して、デッドレターキューに溜まる                                 |
+| GitHub ログイン                                | コードは対応済み。**GitHub の OAuth App の作成と、本番へのキーの設定が未了** ([#2](https://github.com/ut-code/kanban/issues/2))。キーを入れるまで、ボタンは出ない |
 
 ## 名前
 
@@ -64,14 +64,14 @@ export CLOUDFLARE_ACCOUNT_ID=df6c3acd32f66bd1eb95e50607684297   # ut.code();
 
 ## 3. 設定値とシークレット
 
-| 名前                                        | どこに                                                                                | 内容                                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET`                        | web のシークレット (本番)、プレビューの base config のシークレット (全プレビュー共通) | 長いランダム文字列。本番とプレビューで別の値                                 |
-| `BETTER_AUTH_URL`                           | web の `vars` (本番)。プレビューは `scripts/deploy-preview.sh` が渡す                 | 公開 URL。ログインのオリジン確認に使う                                       |
-| `RESEND_API_KEY`                            | reminder-worker のシークレット                                                        | Resend の API キー ([ワーカー仕様](worker.md))                               |
-| `REMINDER_FROM`                             | reminder-worker の `vars`                                                             | 送信元アドレス。独自ドメインの検証が要る                                     |
-| `APP_URL`                                   | reminder-worker の `vars`                                                             | メールのリンクの先 (本番の公開 URL)                                          |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | web                                                                                   | Google でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2)) |
+| 名前                                        | どこに                                                                                | 内容                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`                        | web のシークレット (本番)、プレビューの base config のシークレット (全プレビュー共通) | 長いランダム文字列。本番とプレビューで別の値                                                                        |
+| `BETTER_AUTH_URL`                           | web の `vars` (本番)。プレビューは `scripts/deploy-preview.sh` が渡す                 | 公開 URL。ログインのオリジン確認に使う                                                                              |
+| `RESEND_API_KEY`                            | reminder-worker のシークレット                                                        | Resend の API キー ([ワーカー仕様](worker.md))                                                                      |
+| `REMINDER_FROM`                             | reminder-worker の `vars`                                                             | 送信元アドレス。独自ドメインの検証が要る                                                                            |
+| `APP_URL`                                   | reminder-worker の `vars`                                                             | メールのリンクの先 (本番の公開 URL)                                                                                 |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | web のシークレット (**本番だけ**。プレビューには入れない)                             | GitHub でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2))。作り方は [Web アプリ仕様](web-app.md) |
 
 ```sh
 cd apps/web

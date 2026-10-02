@@ -3,8 +3,9 @@ import { betterAuth } from 'better-auth'
 import { drizzle } from 'drizzle-orm/d1'
 import { D1TaskMemberRepository } from '@todo/db'
 import * as schema from '@todo/db/schema'
+import { socialProviders, type SocialEnv } from './auth-config'
 
-interface AuthEnv {
+interface AuthEnv extends SocialEnv {
   DB: D1Database
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL?: string
@@ -26,6 +27,13 @@ export function getAuth(env: AuthEnv) {
       },
     }),
     emailAndPassword: { enabled: true },
+    socialProviders: socialProviders(env),
+    account: {
+      // Signing in with GitHub for an address that already has a password account joins the two,
+      // but only because GitHub reports whether the address is verified, and better-auth links
+      // them only when it is.
+      accountLinking: { enabled: true, trustedProviders: ['github'] },
+    },
     databaseHooks: {
       user: {
         create: {
