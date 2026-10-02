@@ -10,6 +10,7 @@ const task = (id: string, userId: string, dueAt: string | null = null) => ({
   dueAt,
   completedAt: null,
   remindBeforeMinutes: null,
+  status: 'todo' as const,
 })
 
 describe('D1TaskRepository', () => {
@@ -36,7 +37,7 @@ describe('D1TaskRepository', () => {
     await repository.create(task('late', 'alice', '2030-01-02T00:00:00.000Z'))
     await repository.create(task('soon', 'alice', '2030-01-01T00:00:00.000Z'))
     await repository.create(task('done', 'alice', '2029-01-01T00:00:00.000Z'))
-    await repository.setCompleted('alice', 'done', '2029-01-01T00:00:00.000Z')
+    await repository.setStatus('alice', 'done', 'done', '2029-01-01T00:00:00.000Z')
 
     const tasks = await repository.listByUser('alice')
     expect(tasks.map((t) => t.id)).toEqual(['soon', 'late', 'none', 'done'])
@@ -45,7 +46,7 @@ describe('D1TaskRepository', () => {
   it('does not let another user change or delete a task', async () => {
     await repository.create(task('a1', 'alice'))
 
-    await repository.setCompleted('bob', 'a1', '2030-01-01T00:00:00.000Z')
+    await repository.setStatus('bob', 'a1', 'done', '2030-01-01T00:00:00.000Z')
     await repository.delete('bob', 'a1')
 
     const [stored] = await repository.listByUser('alice')
@@ -54,8 +55,8 @@ describe('D1TaskRepository', () => {
 
   it('deletes and reopens the owner’s tasks', async () => {
     await repository.create(task('a1', 'alice'))
-    await repository.setCompleted('alice', 'a1', '2030-01-01T00:00:00.000Z')
-    await repository.setCompleted('alice', 'a1', null)
+    await repository.setStatus('alice', 'a1', 'done', '2030-01-01T00:00:00.000Z')
+    await repository.setStatus('alice', 'a1', 'todo', null)
     expect((await repository.listByUser('alice'))[0]?.completedAt).toBeNull()
 
     await repository.delete('alice', 'a1')
@@ -106,7 +107,7 @@ describe('reminders', () => {
   it('skips finished, overdue and already queued tasks', async () => {
     const { database, repository } = await setup()
     await repository.create(remindable('done', '2030-01-01T12:00:00.000Z', 60))
-    await repository.setCompleted('alice', 'done', '2030-01-01T01:00:00.000Z')
+    await repository.setStatus('alice', 'done', 'done', '2030-01-01T01:00:00.000Z')
     await repository.create(remindable('past', '2029-12-31T00:00:00.000Z', 60))
     await repository.create(remindable('queued', '2030-01-01T12:00:00.000Z', 60))
 
@@ -155,6 +156,28 @@ describe('reminders', () => {
 
     await repository.update('alice', 't', { remindBeforeMinutes: null })
     expect((await repository.findOwned('alice', 't'))?.remindBeforeMinutes).toBeNull()
+  })
+})
+
+describe('status', () => {
+  it('moves a task between board columns', async () => {
+    const database = createTestDatabase()
+    const repository = new D1TaskRepository(database)
+    await insertUser(database, 'alice')
+    await repository.create(task('a1', 'alice'))
+    expect((await repository.findOwned('alice', 'a1'))?.status).toBe('todo')
+
+    await repository.setStatus('alice', 'a1', 'doing', null)
+    expect(await repository.findOwned('alice', 'a1')).toMatchObject({
+      status: 'doing',
+      completedAt: null,
+    })
+
+    await repository.setStatus('alice', 'a1', 'done', '2030-01-01T00:00:00.000Z')
+    expect(await repository.findOwned('alice', 'a1')).toMatchObject({
+      status: 'done',
+      completedAt: '2030-01-01T00:00:00.000Z',
+    })
   })
 })
 

@@ -1,6 +1,7 @@
 import type { D1TaskMemberRepository, D1TaskRepository } from '@todo/db'
 import { resolveReminder } from '@/lib/reminder'
-import { completionTimestamp, parseCreateTaskInput, parseUpdateTaskInput } from '@/lib/task-input'
+import { statusChange } from '@/lib/status'
+import { parseCreateTaskInput, parseUpdateTaskInput } from '@/lib/task-input'
 
 /** Tells the given users that the tasks they can see have changed. */
 export type Notify = (userIds: string[]) => Promise<void>
@@ -42,6 +43,7 @@ export async function handleTasksRequest(
         id: crypto.randomUUID(),
         userId,
         title: parsed.value.title,
+        status: 'todo' as const,
         completedAt: null,
         ...reminder.value,
       }
@@ -71,7 +73,7 @@ export async function handleTasksRequest(
     const current = await deps.tasks.findAccessible(userId, taskId)
     if (!current) return notFound()
 
-    const { completed, title, dueAt, remindBeforeMinutes } = parsed.value
+    const { status, title, dueAt, remindBeforeMinutes } = parsed.value
     if (remindBeforeMinutes !== undefined && current.userId !== userId) {
       return json({ error: 'リマインドを設定できるのはタスクの所有者だけです。' }, 403)
     }
@@ -86,8 +88,9 @@ export async function handleTasksRequest(
           ? undefined
           : reminder.value.remindBeforeMinutes,
     })
-    if (completed !== undefined) {
-      await deps.tasks.setCompleted(userId, taskId, completionTimestamp(completed, now()))
+    if (status !== undefined && status !== current.status) {
+      const change = statusChange(status, now())
+      await deps.tasks.setStatus(userId, taskId, change.status, change.completedAt)
     }
     await deps.notify(await deps.members.accessUserIds(taskId))
     return new Response(null, { status: 204 })

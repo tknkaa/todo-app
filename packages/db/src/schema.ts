@@ -89,6 +89,9 @@ export const tasks = sqliteTable(
       .notNull()
       .references(() => users.id),
     title: text('title').notNull(),
+    status: text('status', { enum: ['todo', 'doing', 'done'] })
+      .notNull()
+      .default('todo'),
     dueAt: text('due_at'),
     completedAt: text('completed_at'),
     remindBeforeMinutes: integer('remind_before_minutes'),

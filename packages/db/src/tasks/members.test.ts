@@ -19,6 +19,7 @@ describe('task sharing', () => {
       dueAt: null,
       completedAt: null,
       remindBeforeMinutes: null,
+      status: 'todo',
     })
   })
 
@@ -35,7 +36,7 @@ describe('task sharing', () => {
     await members.add('t1', 'bob')
 
     await tasks.update('bob', 't1', { title: 'renamed' })
-    await tasks.setCompleted('bob', 't1', '2030-01-01T00:00:00.000Z')
+    await tasks.setStatus('bob', 't1', 'done', '2030-01-01T00:00:00.000Z')
     expect(await tasks.findAccessible('alice', 't1')).toMatchObject({
       title: 'renamed',
       completedAt: '2030-01-01T00:00:00.000Z',
@@ -48,7 +49,7 @@ describe('task sharing', () => {
 
   it('does not let a stranger edit', async () => {
     await tasks.update('carol', 't1', { title: 'hacked' })
-    await tasks.setCompleted('carol', 't1', '2030-01-01T00:00:00.000Z')
+    await tasks.setStatus('carol', 't1', 'done', '2030-01-01T00:00:00.000Z')
 
     expect(await tasks.findAccessible('alice', 't1')).toMatchObject({
       title: 'one',

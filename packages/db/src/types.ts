@@ -1,7 +1,11 @@
+export type TaskStatus = 'todo' | 'doing' | 'done'
+
 export type Task = {
   id: string
   userId: string
   title: string
+  /** Board column. `done` goes together with `completedAt` being set. */
+  status: TaskStatus
   dueAt: string | null
   completedAt: string | null
   /** Minutes before the deadline to send a reminder. null means no reminder. */

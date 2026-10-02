@@ -30,6 +30,7 @@ describe('D1AttachmentRepository', () => {
       dueAt: null,
       completedAt: null,
       remindBeforeMinutes: null,
+      status: 'todo',
     })
   })
 

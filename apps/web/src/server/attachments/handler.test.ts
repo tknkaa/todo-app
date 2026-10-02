@@ -67,6 +67,7 @@ describe('handleAttachmentsRequest', () => {
       dueAt: null,
       completedAt: null,
       remindBeforeMinutes: null,
+      status: 'todo',
     })
   })
 

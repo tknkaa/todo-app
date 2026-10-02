@@ -1,17 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import type { Task } from '@todo/db'
+import type { Task, TaskStatus } from '@todo/db'
+import { KanbanBoard } from '@/components/kanban-board'
 import { ReminderFields } from '@/components/reminder-fields'
-import { TaskAttachments } from '@/components/task-attachments'
-import { TaskSharing } from '@/components/task-sharing'
+import type { TaskChanges } from '@/components/task-card'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { useLive } from '@/hooks/use-live'
 import { authClient } from '@/lib/auth-client'
-import { formatDueDate, toDateTimeLocal } from '@/lib/format'
-import { formatRemindBefore, readReminder } from '@/lib/reminder'
-import { completionTimestamp } from '@/lib/task-input'
+import { readReminder } from '@/lib/reminder'
+import { moveTask } from '@/lib/status'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -117,24 +115,20 @@ function TaskBoard({
     }
   }
 
-  async function toggleTask(task: Task) {
-    const completed = !task.completedAt
+  async function moveStatus(taskId: string, status: TaskStatus) {
+    const previous = tasks.find((task) => task.id === taskId)
+    if (!previous || previous.status === status) return
+    setTasks((current) => moveTask(current, taskId, status, new Date()))
     try {
-      const response = await fetch(`/api/tasks/${encodeURIComponent(task.id)}`, {
+      const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed }),
+        body: JSON.stringify({ status }),
       })
       if (!response.ok) throw new Error(await responseError(response))
-      setTasks((current) =>
-        current.map((item) =>
-          item.id === task.id
-            ? { ...item, completedAt: completionTimestamp(completed, new Date()) }
-            : item,
-        ),
-      )
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '状態を更新できませんでした。')
+      await loadTasks()
     }
   }
 
@@ -148,10 +142,7 @@ function TaskBoard({
     }
   }
 
-  async function saveTask(
-    task: Task,
-    changes: { title: string; dueAt: string | null; remindBeforeMinutes?: number | null },
-  ) {
+  async function saveTask(task: Task, changes: TaskChanges) {
     try {
       const response = await fetch(`/api/tasks/${encodeURIComponent(task.id)}`, {
         method: 'PATCH',
@@ -181,7 +172,7 @@ function TaskBoard({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[800px] px-5 pt-14 pb-8 md:pt-22">
+    <main className="mx-auto w-full max-w-[1100px] px-5 pt-14 pb-8 md:pt-22">
       <header className="mb-10">
         <div className="mb-6 flex items-center justify-end gap-3 text-xs text-muted-foreground">
           <span>{email}</span>
@@ -254,178 +245,26 @@ function TaskBoard({
             タスク
           </h2>
           <span className="grid h-6 min-w-6 place-items-center rounded-full bg-secondary px-2 text-[11px] font-semibold text-secondary-foreground">
-            {tasks.filter((task) => !task.completedAt).length} 件
+            {tasks.filter((task) => task.status !== 'done').length} 件
           </span>
         </div>
         {loading ? (
           <EmptyMessage>読み込み中…</EmptyMessage>
-        ) : tasks.length === 0 ? (
-          <EmptyMessage>タスクはまだありません。ひとつ追加して始めましょう。</EmptyMessage>
         ) : (
-          <ul className="grid gap-2">
-            {tasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isOwner={task.userId === userId}
-                onToggle={() => void toggleTask(task)}
-                onRemove={() => void removeTask(task.id)}
-                onLeave={() => void leaveTask(task.id)}
-                onSave={(changes) => saveTask(task, changes)}
-              />
-            ))}
-          </ul>
+          <KanbanBoard
+            tasks={tasks}
+            userId={userId}
+            onMove={(taskId, status) => void moveStatus(taskId, status)}
+            onRemove={(taskId) => void removeTask(taskId)}
+            onLeave={(taskId) => void leaveTask(taskId)}
+            onSave={saveTask}
+          />
         )}
       </section>
       <footer className="mt-12 text-center text-[11px] tracking-[0.08em] text-muted-foreground">
         小さな一歩も、前進です。
       </footer>
     </main>
-  )
-}
-
-function TaskRow({
-  task,
-  isOwner,
-  onToggle,
-  onRemove,
-  onLeave,
-  onSave,
-}: {
-  task: Task
-  isOwner: boolean
-  onToggle: () => void
-  onRemove: () => void
-  onLeave: () => void
-  onSave: (changes: {
-    title: string
-    dueAt: string | null
-    remindBeforeMinutes?: number | null
-  }) => Promise<boolean>
-}) {
-  const [editing, setEditing] = useState(false)
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    const dueAtLocal = String(formData.get('dueAt') ?? '')
-    const saved = await onSave({
-      title: String(formData.get('title') ?? ''),
-      dueAt: dueAtLocal ? new Date(dueAtLocal).toISOString() : null,
-      // Only the owner may change the reminder, so a member's save leaves it alone.
-      ...(isOwner ? { remindBeforeMinutes: dueAtLocal ? readReminder(formData) : null } : {}),
-    })
-    if (saved) setEditing(false)
-  }
-
-  return (
-    <li className="grid gap-1 rounded-xl border bg-card px-4 py-3.5">
-      <div className="flex min-h-[40px] items-center gap-3.5">
-        <Checkbox
-          aria-label={`${task.title}を${task.completedAt ? '未完了に戻す' : '完了にする'}`}
-          checked={Boolean(task.completedAt)}
-          onCheckedChange={onToggle}
-        />
-        {editing ? (
-          <form
-            className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_210px_auto]"
-            onSubmit={submit}
-          >
-            <Input
-              name="title"
-              className="h-9"
-              defaultValue={task.title}
-              aria-label="タスク名"
-              maxLength={200}
-              required
-            />
-            <Input
-              name="dueAt"
-              type="datetime-local"
-              className="h-9"
-              defaultValue={toDateTimeLocal(task.dueAt)}
-              aria-label="締め切り"
-            />
-            {isOwner && (
-              <ReminderFields defaultMinutes={task.remindBeforeMinutes} className="sm:col-span-3" />
-            )}
-            <div className="flex gap-1">
-              <Button className="h-9" type="submit">
-                保存
-              </Button>
-              <Button
-                className="h-9"
-                variant="ghost"
-                type="button"
-                onClick={() => setEditing(false)}
-              >
-                取消
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <>
-            <div className="grid min-w-0 flex-1 gap-1">
-              <span
-                className={`break-words text-sm font-medium${task.completedAt ? ' text-muted-foreground line-through' : ''}`}
-              >
-                {task.title}
-              </span>
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                {task.dueAt && <time dateTime={task.dueAt}>{formatDueDate(task.dueAt)}</time>}
-                {task.remindBeforeMinutes !== null && (
-                  <span>リマインド: {formatRemindBefore(task.remindBeforeMinutes)}</span>
-                )}
-                {!isOwner && (
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
-                    共有されたタスク
-                  </span>
-                )}
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-              type="button"
-              onClick={() => setEditing(true)}
-              aria-label={`${task.title}を編集`}
-            >
-              編集
-            </Button>
-            {isOwner ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-destructive"
-                type="button"
-                onClick={onRemove}
-                aria-label={`${task.title}を削除`}
-              >
-                削除
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-destructive"
-                type="button"
-                onClick={onLeave}
-                aria-label={`${task.title}の共有から外れる`}
-              >
-                共有から外れる
-              </Button>
-            )}
-          </>
-        )}
-      </div>
-      {isOwner && (
-        <div className="flex flex-wrap gap-x-4">
-          <TaskAttachments taskId={task.id} title={task.title} />
-          <TaskSharing taskId={task.id} title={task.title} />
-        </div>
-      )}
-    </li>
   )
 }
 

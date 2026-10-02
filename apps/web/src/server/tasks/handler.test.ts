@@ -69,14 +69,41 @@ describe('handleTasksRequest', () => {
     expect(response.status).toBe(400)
   })
 
-  it('completes and reopens a task with the current time', async () => {
+  it('moves a task between columns and records the completion time', async () => {
     const { id } = await create()
 
-    expect((await call('PATCH', `/api/tasks/${id}`, { completed: true })).status).toBe(204)
+    expect((await call('PATCH', `/api/tasks/${id}`, { status: 'done' })).status).toBe(204)
     expect((await tasks.listByUser('alice'))[0]?.completedAt).toBe('2026-10-02T01:02:03.000Z')
 
-    await call('PATCH', `/api/tasks/${id}`, { completed: false })
+    await call('PATCH', `/api/tasks/${id}`, { status: 'todo' })
     expect((await tasks.listByUser('alice'))[0]?.completedAt).toBeNull()
+  })
+
+  it('starts in the todo column and can move to doing without a completion time', async () => {
+    const task = await create()
+    expect(task.status).toBe('todo')
+
+    await call('PATCH', `/api/tasks/${task.id}`, { status: 'doing' })
+    expect(await tasks.findOwned('alice', task.id)).toMatchObject({
+      status: 'doing',
+      completedAt: null,
+    })
+
+    await call('PATCH', `/api/tasks/${task.id}`, { status: 'done' })
+    expect(await tasks.findOwned('alice', task.id)).toMatchObject({
+      status: 'done',
+      completedAt: '2026-10-02T01:02:03.000Z',
+    })
+
+    await call('PATCH', `/api/tasks/${task.id}`, { status: 'doing' })
+    expect((await tasks.findOwned('alice', task.id))?.completedAt).toBeNull()
+  })
+
+  it('keeps the first completion time when moved to done again', async () => {
+    const { id } = await create()
+    await call('PATCH', `/api/tasks/${id}`, { status: 'done' })
+    await call('PATCH', `/api/tasks/${id}`, { status: 'done' })
+    expect((await tasks.findOwned('alice', id))?.completedAt).toBe('2026-10-02T01:02:03.000Z')
   })
 
   it('edits the title and deadline, and clears the deadline', async () => {
@@ -94,7 +121,7 @@ describe('handleTasksRequest', () => {
 
   it('validates updates', async () => {
     const { id } = await create()
-    expect((await call('PATCH', `/api/tasks/${id}`, { completed: 'yes' })).status).toBe(400)
+    expect((await call('PATCH', `/api/tasks/${id}`, { status: 'finished' })).status).toBe(400)
     expect((await call('PATCH', `/api/tasks/${id}`, {})).status).toBe(400)
     expect((await call('PATCH', `/api/tasks/${id}`, { title: ' ' })).status).toBe(400)
   })
@@ -102,7 +129,7 @@ describe('handleTasksRequest', () => {
   it('answers 404 when another user changes or deletes a task', async () => {
     const { id } = await create()
 
-    expect((await call('PATCH', `/api/tasks/${id}`, { completed: true }, 'bob')).status).toBe(404)
+    expect((await call('PATCH', `/api/tasks/${id}`, { status: 'done' }, 'bob')).status).toBe(404)
     expect((await call('DELETE', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(404)
     expect((await tasks.listByUser('alice'))[0]?.completedAt).toBeNull()
   })
@@ -130,7 +157,7 @@ describe('handleTasksRequest', () => {
     await members.add(id, 'bob')
     notified = []
 
-    await call('PATCH', `/api/tasks/${id}`, { completed: true }, 'bob')
+    await call('PATCH', `/api/tasks/${id}`, { status: 'done' }, 'bob')
     await call('DELETE', `/api/tasks/${id}`)
 
     expect(notified).toEqual([
