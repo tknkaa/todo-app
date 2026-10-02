@@ -25,4 +25,4 @@ pnpm dev
 
 ## Inspecting the local database
 
-With [just](https://just.systems) installed: `just tasks`, `just users`, `just tables`, or `just sql "select ..."`. `just migrate` applies migrations.
+With [just](https://just.systems) installed: `just sql "select * from tasks"`. Use `pnpm db:migrate:local` to apply migrations.
