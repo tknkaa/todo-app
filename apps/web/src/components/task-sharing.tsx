@@ -4,14 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 export function TaskSharing({ taskId, title }: { taskId: string; title: string }) {
-  const [open, setOpen] = useState(false)
   const [members, setMembers] = useState<TaskMember[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const base = `/api/tasks/${encodeURIComponent(taskId)}/members`
 
   useEffect(() => {
-    if (!open || members !== null) return
+    if (members !== null) return
     let active = true
     void (async () => {
       try {
@@ -26,7 +25,7 @@ export function TaskSharing({ taskId, title }: { taskId: string; title: string }
     return () => {
       active = false
     }
-  }, [open, members, base])
+  }, [members, base])
 
   async function share(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -62,56 +61,42 @@ export function TaskSharing({ taskId, title }: { taskId: string; title: string }
   }
 
   return (
-    <div className="grid gap-2 text-xs">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-fit text-muted-foreground"
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        共有{members ? ` (${members.length})` : ''}
-      </Button>
-      {open && (
-        <div className="grid gap-2 pl-2">
-          {members?.map((member) => (
-            <div className="flex items-center gap-3" key={member.userId}>
-              <span className="min-w-0 flex-1 truncate">{member.email}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-destructive"
-                type="button"
-                onClick={() => void unshare(member.userId)}
-                aria-label={`${member.email}との共有を解除`}
-              >
-                解除
-              </Button>
-            </div>
-          ))}
-          <form className="flex gap-2" onSubmit={(event) => void share(event)}>
-            <Input
-              name="email"
-              type="email"
-              className="h-9"
-              placeholder="共有する相手のメールアドレス"
-              aria-label={`${title}を共有する相手のメールアドレス`}
-              required
-            />
-            <Button className="h-9" type="submit" disabled={busy}>
-              共有する
-            </Button>
-          </form>
-          <p className="text-[11px] text-muted-foreground">
-            共有した相手は、タイトル・締め切り・完了を編集できます。削除と添付は所有者だけです。
-          </p>
-          {error && (
-            <p className="text-destructive" role="alert">
-              {error}
-            </p>
-          )}
+    <div className="grid gap-2 pl-2 text-xs">
+      {members?.map((member) => (
+        <div className="flex items-center gap-3" key={member.userId}>
+          <span className="min-w-0 flex-1 truncate">{member.email}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+            type="button"
+            onClick={() => void unshare(member.userId)}
+            aria-label={`${member.email}との共有を解除`}
+          >
+            解除
+          </Button>
         </div>
+      ))}
+      <form className="flex gap-2" onSubmit={(event) => void share(event)}>
+        <Input
+          name="email"
+          type="email"
+          className="h-9"
+          placeholder="共有する相手のメールアドレス"
+          aria-label={`${title}を共有する相手のメールアドレス`}
+          required
+        />
+        <Button className="h-9" type="submit" disabled={busy}>
+          共有する
+        </Button>
+      </form>
+      <p className="text-[11px] text-muted-foreground">
+        共有した相手は、タイトル・締め切り・完了を編集できます。削除と添付は所有者だけです。
+      </p>
+      {error && (
+        <p className="text-destructive" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )

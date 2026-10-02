@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Task, TaskStatus } from '@todo/db'
 import { TaskCard, type TaskChanges } from '@/components/task-card'
 import { STATUS_LABELS, TASK_STATUSES, groupByStatus } from '@/lib/status'
@@ -20,6 +20,28 @@ export function KanbanBoard({
 }) {
   const columns = groupByStatus(tasks)
   const [over, setOver] = useState<TaskStatus | null>(null)
+  const [dragging, setDragging] = useState<string | null>(null)
+
+  // dragend does not fire on the card if it was dropped somewhere else or re-rendered, so
+  // also reset when any drag ends.
+  useEffect(() => {
+    const stop = () => {
+      setDragging(null)
+      setOver(null)
+    }
+    // Mouse events are not sent during a drag, so one arriving means no drag is going on.
+    const stopIfIdle = () => setDragging((current) => (current === null ? current : null))
+    window.addEventListener('dragend', stop)
+    window.addEventListener('drop', stop)
+    window.addEventListener('pointermove', stopIfIdle)
+    window.addEventListener('pointerdown', stopIfIdle)
+    return () => {
+      window.removeEventListener('dragend', stop)
+      window.removeEventListener('drop', stop)
+      window.removeEventListener('pointermove', stopIfIdle)
+      window.removeEventListener('pointerdown', stopIfIdle)
+    }
+  }, [])
 
   return (
     <div className="grid items-start gap-4 md:grid-cols-3">
@@ -65,10 +87,13 @@ export function KanbanBoard({
                 onRemove={() => onRemove(task.id)}
                 onLeave={() => onLeave(task.id)}
                 onSave={(changes) => onSave(task, changes)}
+                dragging={dragging === task.id}
+                onDragStart={() => setDragging(task.id)}
+                onDragEnd={() => setDragging(null)}
               />
             ))}
           </ul>
-          {columns[status].length === 0 && (
+          {columns[status].every((task) => task.id === dragging) && (
             <p className="px-2 py-6 text-center text-xs text-muted-foreground">
               ここにカードをドラッグ
             </p>

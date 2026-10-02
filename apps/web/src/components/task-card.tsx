@@ -22,15 +22,22 @@ export function TaskCard({
   onRemove,
   onLeave,
   onSave,
+  dragging,
+  onDragStart,
+  onDragEnd,
 }: {
   task: Task
   isOwner: boolean
+  dragging: boolean
+  onDragStart: () => void
+  onDragEnd: () => void
   onMove: (status: TaskStatus) => void
   onRemove: () => void
   onLeave: () => void
   onSave: (changes: TaskChanges) => Promise<boolean>
 }) {
   const [editing, setEditing] = useState(false)
+  const [panel, setPanel] = useState<'attachments' | 'sharing' | null>(null)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -49,12 +56,17 @@ export function TaskCard({
     // Dragging is a pointer shortcut; the status select below is the keyboard and touch way.
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <li
-      className="grid cursor-grab gap-2 rounded-xl border bg-card p-3.5 shadow-xs active:cursor-grabbing"
+      className={`grid cursor-grab gap-2 rounded-xl bg-card shadow-xs active:cursor-grabbing${dragging ? ' -mt-2 h-0 overflow-hidden opacity-0' : ' border p-3.5'}`}
       draggable={!editing}
       onDragStart={(event) => {
         event.dataTransfer.setData('text/plain', task.id)
         event.dataTransfer.effectAllowed = 'move'
+        // Hide the original after the browser has taken its drag image. Hiding it right away
+        // cancels the drag, and so does `display: none`, so collapse it instead (the negative
+        // margin cancels the grid gap it would leave).
+        setTimeout(onDragStart, 0)
       }}
+      onDragEnd={onDragEnd}
     >
       {editing ? (
         <form className="grid gap-2" onSubmit={submit}>
@@ -151,10 +163,30 @@ export function TaskCard({
             )}
           </div>
           {isOwner && (
-            <div className="flex flex-wrap gap-x-3">
-              <TaskAttachments taskId={task.id} title={task.title} />
-              <TaskSharing taskId={task.id} title={task.title} />
-            </div>
+            <>
+              <div className="flex gap-1">
+                {(
+                  [
+                    ['attachments', '添付'],
+                    ['sharing', '共有'],
+                  ] as const
+                ).map(([name, label]) => (
+                  <Button
+                    key={name}
+                    variant="ghost"
+                    size="sm"
+                    className={`text-muted-foreground${panel === name ? ' bg-accent' : ''}`}
+                    type="button"
+                    aria-expanded={panel === name}
+                    onClick={() => setPanel((current) => (current === name ? null : name))}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              {panel === 'attachments' && <TaskAttachments taskId={task.id} title={task.title} />}
+              {panel === 'sharing' && <TaskSharing taskId={task.id} title={task.title} />}
+            </>
           )}
         </>
       )}
