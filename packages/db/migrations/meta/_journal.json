@@ -50,6 +50,13 @@
       "when": 1790936521372,
       "tag": "0007_add_task_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1790936995619,
+      "tag": "0008_add_task_position",
+      "breakpoints": true
     }
   ]
 }

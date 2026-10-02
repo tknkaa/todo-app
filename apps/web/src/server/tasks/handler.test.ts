@@ -179,6 +179,43 @@ describe('handleTasksRequest', () => {
     expect((await call('GET', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(200)
   })
 
+  it('puts a new task at the top of the to-do column', async () => {
+    const first = await create({ title: 'First' })
+    const second = await create({ title: 'Second' })
+
+    expect(second.position).toBeLessThan(first.position)
+    const listed = (await (await call('GET', '/api/tasks')).json()) as Task[]
+    expect(listed.map((task) => task.title)).toEqual(['Second', 'First'])
+  })
+
+  it('reorders a task with a position, together with a move to another column', async () => {
+    const a = await create({ title: 'A' })
+    const b = await create({ title: 'B' })
+
+    expect((await call('PATCH', `/api/tasks/${b.id}`, { position: a.position + 0.5 })).status).toBe(
+      204,
+    )
+    expect(
+      ((await (await call('GET', '/api/tasks')).json()) as Task[]).map((t) => t.title),
+    ).toEqual(['A', 'B'])
+
+    await call('PATCH', `/api/tasks/${a.id}`, { status: 'doing', position: 10 })
+    expect(await tasks.findOwned('alice', a.id)).toMatchObject({ status: 'doing', position: 10 })
+  })
+
+  it('rejects an invalid position', async () => {
+    const { id } = await create()
+    expect((await call('PATCH', `/api/tasks/${id}`, { position: 'top' })).status).toBe(400)
+  })
+
+  it('lets a member reorder a shared task', async () => {
+    const { id } = await create()
+    await members.addByEmail(id, 'bob@example.com')
+
+    expect((await call('PATCH', `/api/tasks/${id}`, { position: 42 }, 'bob')).status).toBe(204)
+    expect((await tasks.findOwned('alice', id))?.position).toBe(42)
+  })
+
   it('answers 404 for a task that does not exist', async () => {
     expect((await call('GET', '/api/tasks/missing')).status).toBe(404)
   })

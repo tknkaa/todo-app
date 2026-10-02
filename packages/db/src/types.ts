@@ -6,6 +6,8 @@ export type Task = {
   title: string
   /** Board column. `done` goes together with `completedAt` being set. */
   status: TaskStatus
+  /** Order inside the board column. Smaller comes first. */
+  position: number
   dueAt: string | null
   completedAt: string | null
   /** Minutes before the deadline to send a reminder. null means no reminder. */

@@ -51,9 +51,9 @@ export async function handleTasksRequest(
         completedAt: null,
         ...reminder.value,
       }
-      await deps.tasks.create(task)
+      const created = await deps.tasks.create(task)
       await deps.notify([userId])
-      return json(task, 201)
+      return json(created, 201)
     }
 
     return json({ error: 'Method not allowed' }, 405, { Allow: 'GET, POST' })
@@ -82,7 +82,7 @@ export async function handleTasksRequest(
     const current = await deps.tasks.findAccessible(userId, taskId)
     if (!current) return notFound()
 
-    const { status, title, dueAt, remindBeforeMinutes } = parsed.value
+    const { status, title, dueAt, remindBeforeMinutes, position } = parsed.value
     if (remindBeforeMinutes !== undefined && current.userId !== userId) {
       return json({ error: 'リマインドを設定できるのはタスクの所有者だけです。' }, 403)
     }
@@ -91,6 +91,7 @@ export async function handleTasksRequest(
 
     await deps.tasks.update(userId, taskId, {
       title,
+      position,
       dueAt,
       remindBeforeMinutes:
         reminder.value.remindBeforeMinutes === current.remindBeforeMinutes
