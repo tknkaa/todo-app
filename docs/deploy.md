@@ -64,14 +64,14 @@ export CLOUDFLARE_ACCOUNT_ID=df6c3acd32f66bd1eb95e50607684297   # ut.code();
 
 ## 3. 設定値とシークレット
 
-| 名前                                        | どこに                                                                                | 内容                                                                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET`                        | web のシークレット (本番)、プレビューの base config のシークレット (全プレビュー共通) | 長いランダム文字列。本番とプレビューで別の値                                                                        |
-| `BETTER_AUTH_URL`                           | web の `vars` (本番)。プレビューは `scripts/deploy-preview.sh` が渡す                 | 公開 URL。ログインのオリジン確認に使う                                                                              |
-| `RESEND_API_KEY`                            | reminder-worker のシークレット                                                        | Resend の API キー ([ワーカー仕様](worker.md))                                                                      |
-| `REMINDER_FROM`                             | reminder-worker の `vars`                                                             | 送信元アドレス。独自ドメインの検証が要る                                                                            |
-| `APP_URL`                                   | reminder-worker の `vars`                                                             | メールのリンクの先 (本番の公開 URL)                                                                                 |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | web のシークレット (**本番だけ**。プレビューには入れない)                             | GitHub でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2))。作り方は [Web アプリ仕様](web-app.md) |
+| 名前                                        | どこに                                                                                | 内容                                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`                        | web のシークレット (本番)、プレビューの base config のシークレット (全プレビュー共通) | 長いランダム文字列。本番とプレビューで別の値                                                                                                                            |
+| `BETTER_AUTH_URL`                           | web の `vars` (本番)。プレビューは `scripts/deploy-preview.sh` が渡す                 | 公開 URL。ログインのオリジン確認に使う                                                                                                                                  |
+| `RESEND_API_KEY`                            | reminder-worker のシークレット                                                        | Resend の API キー ([ワーカー仕様](worker.md))                                                                                                                          |
+| `REMINDER_FROM`                             | reminder-worker の `vars`                                                             | 送信元アドレス。独自ドメインの検証が要る                                                                                                                                |
+| `APP_URL`                                   | reminder-worker の `vars`                                                             | メールのリンクの先 (本番の公開 URL)                                                                                                                                     |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | web のシークレット (**本番だけ**。プレビューには入れない)                             | GitHub でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2))。作り方は [Web アプリ仕様](web-app.md) (アプリは 1 つで、本番とローカルの戻り先を登録する) |
 
 ```sh
 cd apps/web

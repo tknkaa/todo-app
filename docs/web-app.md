@@ -40,12 +40,15 @@
 - 共有の招待 (アカウントがないメールアドレスへの共有) は、GitHub でアカウントを作ったときにも、メール/パスワードのときと同じように反映される。
 - 取得する権限は、`read:user` と `user:email` (メールアドレスを知るため)。
 
-**GitHub 側の準備 (GitHub の画面での作業):** ut-code の org の Settings → Developer settings → OAuth Apps → New OAuth App で作る。GitHub の OAuth App は、**ログインの戻り先 (Authorization callback URL) を 1 つしか登録できない**ので、環境ごとに別のアプリを作る。
+**GitHub 側の準備 (GitHub の画面での作業):** ut-code の org (または個人のアカウント。あとから org に移せる) の Settings → Developer settings → OAuth Apps → New OAuth App で、**アプリを 1 つ**作る。GitHub の OAuth App は、2026 年 8 月から、戻り先 (Authorization callback URL) を最大 10 個まで登録できるので、本番とローカルを同じアプリに登録する。
 
-| 環境     | Homepage URL                             | Authorization callback URL                                        |
-| -------- | ---------------------------------------- | ----------------------------------------------------------------- |
-| 本番     | `https://kanban-web.ut-code.workers.dev` | `https://kanban-web.ut-code.workers.dev/api/auth/callback/github` |
-| ローカル | `http://localhost:8787`                  | `http://localhost:8787/api/auth/callback/github`                  |
+| 項目                              | 値                                                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Homepage URL                      | `https://kanban-web.ut-code.workers.dev`                                                                            |
+| Authorization callback URL (2 つ) | `https://kanban-web.ut-code.workers.dev/api/auth/callback/github`、`http://localhost:8787/api/auth/callback/github` |
+| Allow wildcard matching           | **オフ** (両方の URL)                                                                                               |
+| Enable Device Flow                | オフ (CLI などの用。使わない)                                                                                       |
+| Expire user access tokens         | オフでよい (ログインのときに 1 回、プロフィールを読むだけで、あとで GitHub の API を呼ばない)                       |
 
 できたクライアント ID と、「Generate a new client secret」で作ったシークレットを、環境に入れる。シークレットは、チャットやコミットに書かない。
 
@@ -57,7 +60,7 @@ pnpm --filter @todo/web exec wrangler secret put GITHUB_CLIENT_SECRET
 # ローカル: apps/web/.dev.vars に GITHUB_CLIENT_ID と GITHUB_CLIENT_SECRET を書く
 ```
 
-**プレビューでは使えない:** プレビューは、ブランチごとに URL が違い、GitHub は、戻り先に複数の URL もワイルドカードも登録させないので、ブランチごとのプレビューでは GitHub ログインは使えない (メール/パスワードで確かめる)。プレビューの設定には、キーを入れない (入れなければボタンが出ない)。better-auth の `oAuthProxy` で、本番を経由させる方法もあるが、本番とプレビューで暗号化のシークレットを共有するので、必要になるまで使わない。
+**プレビューでは使えない:** プレビューは、ブランチごとに URL が違う (`<ブランチ名>-kanban-web.ut-code.workers.dev`)。戻り先の「ワイルドカード」は、登録した URL の**サブドメイン**を許すだけで、この URL は兄弟のホスト名なので合わない。全部を受け付けるには `ut-code.workers.dev` そのものを登録することになり、ut-code のアカウントのほかの Worker にも認可コードが渡りうるので、しない。ブランチごとのプレビューでは、メール/パスワードで確かめる。プレビューの設定には、キーを入れない (入れなければボタンが出ない)。better-auth の `oAuthProxy` で、本番を経由させる方法もあるが、本番とプレビューで暗号化のシークレットを共有するので、必要になるまで使わない。
 
 ### 予定
 
