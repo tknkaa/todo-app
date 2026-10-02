@@ -27,6 +27,20 @@ export class D1TaskRepository {
       )
   }
 
+  async findOwned(userId: string, taskId: string): Promise<Task | null> {
+    const [task] = await this.db
+      .select({
+        id: tasks.id,
+        userId: tasks.userId,
+        title: tasks.title,
+        dueAt: tasks.dueAt,
+        completedAt: tasks.completedAt,
+      })
+      .from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    return task ?? null
+  }
+
   async create(task: Task) {
     await this.db.insert(tasks).values(task).run()
   }

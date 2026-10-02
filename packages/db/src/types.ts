@@ -13,3 +13,14 @@ export type ReminderMessage = {
   title: string
   dueAt: string
 }
+
+export type Attachment = {
+  id: string
+  taskId: string
+  userId: string
+  filename: string
+  contentType: string
+  size: number
+  r2Key: string
+  createdAt: string
+}

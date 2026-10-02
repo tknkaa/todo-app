@@ -81,3 +81,17 @@ describe('reminders', () => {
     expect(await findDueReminders(database, now, until)).toEqual([])
   })
 })
+
+describe('findOwned', () => {
+  it('returns the task only for its owner', async () => {
+    const database = createTestDatabase()
+    const repository = new D1TaskRepository(database)
+    await insertUser(database, 'alice')
+    await insertUser(database, 'bob')
+    await repository.create(task('a1', 'alice'))
+
+    expect(await repository.findOwned('alice', 'a1')).toMatchObject({ id: 'a1' })
+    expect(await repository.findOwned('bob', 'a1')).toBeNull()
+    expect(await repository.findOwned('alice', 'missing')).toBeNull()
+  })
+})
