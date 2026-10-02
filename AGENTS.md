@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Todo アプリ。Cloudflare Workers 上の TanStack Start (`apps/web`) と、cron で動くリマインド用 Worker (`apps/reminder-worker`)。データは D1 (Drizzle)、ファイルは R2、リアルタイム通知は Durable Objects。仕様と構成は `docs/` にある。まず `docs/architecture.md` を読む。
+Todo アプリ。Cloudflare Workers 上の TanStack Start (`apps/web`) と、メールを送る Worker (`apps/reminder-worker`。cron のリマインドと、共有の通知)。データは D1 (Drizzle)、ファイルは R2、リアルタイム通知は Durable Objects。仕様と構成は `docs/` にある。まず `docs/architecture.md` を読む。
 
 ## コマンド
 
@@ -8,7 +8,8 @@ Todo アプリ。Cloudflare Workers 上の TanStack Start (`apps/web`) と、cro
 pnpm check                 # フォーマット、lint、型チェック、テスト。PR の前に必ず通す
 pnpm test:e2e              # 本物のブラウザでの E2E (Chrome が必要。空の DB で別のポート 8788 に起動する)
 pnpm format                # Oxfmt で整形
-pnpm test                  # Vitest (apps/web と packages/db)
+pnpm test                  # Vitest (apps/web、apps/reminder-worker、packages/db)
+pnpm check:deploy          # Wrangler の設定 (本番、プレビュー、ワーカー) が読めることの確認。アップロードはしない
 pnpm db:generate --name=<内容が分かる名前>   # マイグレーションを生成
 pnpm db:migrate:local      # ローカルの D1 に適用
 pnpm dev                   # ビルドして wrangler dev (http://localhost:8787)
@@ -24,7 +25,7 @@ just sql "select * from tasks"   # ローカルの D1 を見る
 - `apps/web/src/server/`: HTTP ハンドラ。依存 (リポジトリ、R2、通知) は引数で受け取り、テストでは差し替える。
 - `apps/web/src/components/`, `routes/`, `hooks/`: 画面。
 - `packages/db`: Drizzle のスキーマ、マイグレーション、D1 リポジトリ、共有する型。パッケージは増やさない (`domain` や `application` に戻さない)。
-- `docs/`: 仕様。**挙動、API、テーブルを変えたら、同じ PR で docs も更新する。**
+- `docs/`: 仕様と手順 (デプロイは `docs/deploy.md`)。**挙動、API、テーブル、設定を変えたら、同じ PR で docs も更新する。**
 
 ## テスト
 
@@ -42,9 +43,12 @@ just sql "select * from tasks"   # ローカルの D1 を見る
 
 ## 権限
 
-- タスクを見たり、タイトル・締め切り・ステータスを変えたりできるのは、所有者と共有された人。
+- タスクを見たり、タイトル・締め切り・ステータス・本文を変えたり、並べ替えたりできるのは、所有者と共有された人。
 - 削除、リマインドの設定、添付ファイル、共有の操作は所有者だけ。
-- 他のユーザーのものには 404 を返し、存在を知らせない。R2 のキー (`r2Key`) は API で返さない。
+- 他のユーザーのものには 404 を返し、存在を知らせない。
+- 共有の API は、メールアドレスにアカウントがあるかどうかを答えない。ないアドレスは「招待」として保存し、アカウントができたときに共有する。同じ応答、同じ形の一覧にする。
+- 本文の保存は、読み込んだ版 (`descriptionVersion`) を付けて送り、古ければ 409 で断る。他の人の本文を黙って上書きしない。
+- R2 のキー (`r2Key`) は API で返さない。
 - 添付のダウンロードは常に `Content-Disposition: attachment` と `nosniff` を付ける。
 
 ## 守ること
