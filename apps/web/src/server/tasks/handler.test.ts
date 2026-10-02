@@ -142,7 +142,7 @@ describe('handleTasksRequest', () => {
 
   it('lets a member edit a shared task but not delete it', async () => {
     const { id } = await create()
-    await members.add(id, 'bob')
+    await members.addByEmail(id, 'bob@example.com')
 
     expect(
       ((await (await call('GET', '/api/tasks', undefined, 'bob')).json()) as Task[]).length,
@@ -154,7 +154,7 @@ describe('handleTasksRequest', () => {
 
   it('notifies everyone who can see the task about changes', async () => {
     const { id } = await create()
-    await members.add(id, 'bob')
+    await members.addByEmail(id, 'bob@example.com')
     notified = []
 
     await call('PATCH', `/api/tasks/${id}`, { status: 'done' }, 'bob')
@@ -175,7 +175,7 @@ describe('handleTasksRequest', () => {
 
     expect((await call('GET', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(404)
 
-    await members.add(id, 'bob')
+    await members.addByEmail(id, 'bob@example.com')
     expect((await call('GET', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(200)
   })
 
@@ -244,7 +244,7 @@ describe('handleTasksRequest', () => {
 
     it('can be changed only by the owner', async () => {
       const { id } = await create({ title: 'Task', dueAt: due })
-      await members.add(id, 'bob')
+      await members.addByEmail(id, 'bob@example.com')
 
       const response = await call('PATCH', `/api/tasks/${id}`, { remindBeforeMinutes: 60 }, 'bob')
       expect(response.status).toBe(403)

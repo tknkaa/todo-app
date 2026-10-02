@@ -114,6 +114,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15))
       wrangler:
         specifier: 'catalog:'
         version: 4.146.0(@cloudflare/workers-types@4.20260702.1)(@types/node@24.19.1)

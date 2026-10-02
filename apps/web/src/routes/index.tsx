@@ -159,7 +159,7 @@ function TaskBoard({
   async function leaveTask(taskId: string) {
     try {
       const response = await fetch(
-        `/api/tasks/${encodeURIComponent(taskId)}/members/${encodeURIComponent(userId)}`,
+        `/api/tasks/${encodeURIComponent(taskId)}/members/${encodeURIComponent(email)}`,
         { method: 'DELETE' },
       )
       if (!response.ok) throw new Error(await responseError(response))

@@ -3,6 +3,11 @@
   "name": "todo-reminder-worker",
   "main": "src/index.ts",
   "compatibility_date": "2026-01-01",
+  "vars": {
+    // Where the links in mails point to, and who they come from. Set RESEND_API_KEY as a secret.
+    "APP_URL": "http://localhost:8787",
+    "REMINDER_FROM": "onboarding@resend.dev",
+  },
   "triggers": {
     "crons": ["*/15 * * * *"],
   },
@@ -24,6 +29,11 @@
     "consumers": [
       {
         "queue": "todo-reminders",
+        "max_batch_size": 10,
+        "max_retries": 3,
+      },
+      {
+        "queue": "todo-notifications",
         "max_batch_size": 10,
         "max_retries": 3,
       },

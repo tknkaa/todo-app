@@ -22,6 +22,15 @@
       "bucket_name": "todo-files",
     },
   ],
+  "queues": {
+    // Mails to send (for example "a task was shared with you"). The reminder worker sends them.
+    "producers": [
+      {
+        "binding": "NOTIFICATION_QUEUE",
+        "queue": "todo-notifications",
+      },
+    ],
+  },
   "durable_objects": {
     "bindings": [
       {

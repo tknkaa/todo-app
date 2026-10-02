@@ -1,4 +1,4 @@
-import type { D1TaskMemberRepository, D1TaskRepository } from '@todo/db'
+import type { D1TaskMemberRepository, D1TaskRepository, NotificationMessage } from '@todo/db'
 import { resolveReminder } from '@/lib/reminder'
 import { statusChange } from '@/lib/status'
 import { parseCreateTaskInput, parseUpdateTaskInput } from '@/lib/task-input'
@@ -6,10 +6,14 @@ import { parseCreateTaskInput, parseUpdateTaskInput } from '@/lib/task-input'
 /** Tells the given users that the tasks they can see have changed. */
 export type Notify = (userIds: string[]) => Promise<void>
 
+/** Queues a mail. It is sent later by the worker, so a mail problem never fails a request. */
+export type SendMail = (message: NotificationMessage) => Promise<void>
+
 export interface TaskDeps {
   tasks: D1TaskRepository
   members: D1TaskMemberRepository
   notify: Notify
+  sendMail?: SendMail
   now?: () => Date
 }
 

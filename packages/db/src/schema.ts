@@ -147,3 +147,21 @@ export const taskMembers = sqliteTable(
     index('task_members_user_id_idx').on(table.userId),
   ],
 )
+
+/** A share offered to an email address that has no account yet. It becomes a membership on sign-up. */
+export const taskInvites = sqliteTable(
+  'task_invites',
+  {
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    primaryKey({ columns: [table.taskId, table.email] }),
+    index('task_invites_email_idx').on(table.email),
+  ],
+)
