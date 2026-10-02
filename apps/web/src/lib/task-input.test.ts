@@ -110,3 +110,23 @@ describe('reminder setting in task input', () => {
     expect(parseUpdateTaskInput({ remindBeforeMinutes })).toEqual({ ok: false, message })
   })
 })
+
+describe('position in task input', () => {
+  it('accepts a number when updating', () => {
+    expect(parseUpdateTaskInput({ position: 2.5 })).toEqual({ ok: true, value: { position: 2.5 } })
+    expect(parseUpdateTaskInput({ position: -3, status: 'doing' })).toEqual({
+      ok: true,
+      value: { position: -3, status: 'doing' },
+    })
+  })
+
+  it.each(['1', null, true, Number.NaN, Number.POSITIVE_INFINITY, 1e13, -1e13])(
+    'rejects %j',
+    (position) => {
+      expect(parseUpdateTaskInput({ position })).toEqual({
+        ok: false,
+        message: '並び順が正しくありません。',
+      })
+    },
+  )
+})

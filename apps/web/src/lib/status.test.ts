@@ -7,6 +7,7 @@ const task = (id: string, status: Task['status']): Task => ({
   userId: 'u',
   title: id,
   status,
+  position: 0,
   dueAt: null,
   completedAt: status === 'done' ? '2030-01-01T00:00:00.000Z' : null,
   remindBeforeMinutes: null,
@@ -48,6 +49,15 @@ describe('groupByStatus', () => {
     expect(columns.done.map((t) => t.id)).toEqual(['a'])
   })
 
+  it('orders each column by position', () => {
+    const columns = groupByStatus([
+      { ...task('late', 'todo'), position: 5 },
+      { ...task('early', 'todo'), position: -2 },
+      { ...task('middle', 'todo'), position: 1 },
+    ])
+    expect(columns.todo.map((t) => t.id)).toEqual(['early', 'middle', 'late'])
+  })
+
   it('returns three empty columns for no tasks', () => {
     expect(groupByStatus([])).toEqual({ todo: [], doing: [], done: [] })
   })
@@ -63,6 +73,20 @@ describe('moveTask', () => {
   it('clears the completion time when moving out of done', () => {
     const moved = moveTask([task('a', 'done')], 'a', 'doing', now)
     expect(moved[0]).toMatchObject({ status: 'doing', completedAt: null })
+  })
+
+  it('sets the position, and keeps the finish time when the column does not change', () => {
+    const moved = moveTask([task('a', 'done')], 'a', 'done', now, 7.5)
+    expect(moved[0]).toMatchObject({
+      status: 'done',
+      position: 7.5,
+      completedAt: '2030-01-01T00:00:00.000Z',
+    })
+  })
+
+  it('keeps the position when none is given', () => {
+    const moved = moveTask([{ ...task('a', 'todo'), position: 3 }], 'a', 'doing', now)
+    expect(moved[0].position).toBe(3)
   })
 
   it('leaves the list unchanged for an unknown id', () => {

@@ -113,15 +113,15 @@ function TaskBoard({
     }
   }
 
-  async function moveStatus(taskId: string, status: TaskStatus) {
+  async function moveStatus(taskId: string, status: TaskStatus, position: number) {
     const previous = tasks.find((task) => task.id === taskId)
-    if (!previous || previous.status === status) return
-    setTasks((current) => moveTask(current, taskId, status, new Date()))
+    if (!previous || (previous.status === status && previous.position === position)) return
+    setTasks((current) => moveTask(current, taskId, status, new Date(), position))
     try {
       const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, position }),
       })
       if (!response.ok) throw new Error(await responseError(response))
     } catch (cause) {
@@ -252,7 +252,7 @@ function TaskBoard({
           <KanbanBoard
             tasks={tasks}
             userId={userId}
-            onMove={(taskId, status) => void moveStatus(taskId, status)}
+            onMove={(taskId, status, position) => void moveStatus(taskId, status, position)}
             onRemove={(taskId) => void removeTask(taskId)}
             onLeave={(taskId) => void leaveTask(taskId)}
             onSave={saveTask}

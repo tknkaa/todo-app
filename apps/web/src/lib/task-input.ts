@@ -37,10 +37,20 @@ const createTaskSchema = v.object({
   remindBeforeMinutes: v.optional(remindBeforeSchema, null),
 })
 
+const positionMessage = '並び順が正しくありません。'
+
 const updateTaskSchema = v.object({
   title: v.optional(titleSchema),
   dueAt: v.optional(dueAtSchema),
   remindBeforeMinutes: v.optional(remindBeforeSchema),
+  position: v.optional(
+    v.pipe(
+      v.number(positionMessage),
+      v.finite(positionMessage),
+      v.minValue(-1e12, positionMessage),
+      v.maxValue(1e12, positionMessage),
+    ),
+  ),
   status: v.optional(
     v.picklist(TASK_STATUSES, 'status は todo / doing / done のいずれかを指定してください。'),
   ),
@@ -69,12 +79,13 @@ export function parseUpdateTaskInput(input: unknown): UpdateParseResult {
   if (!result.success) {
     return { ok: false, message: result.issues[0]?.message ?? '入力を確認してください。' }
   }
-  const { title, dueAt, status, remindBeforeMinutes } = result.output
+  const { title, dueAt, status, remindBeforeMinutes, position } = result.output
   if (
     title === undefined &&
     dueAt === undefined &&
     status === undefined &&
-    remindBeforeMinutes === undefined
+    remindBeforeMinutes === undefined &&
+    position === undefined
   ) {
     return { ok: false, message: '変更する項目を指定してください。' }
   }

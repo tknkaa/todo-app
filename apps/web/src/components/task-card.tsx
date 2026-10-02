@@ -24,12 +24,15 @@ export function TaskCard({
   onLeave,
   onSave,
   dragging,
+  indicator,
   onDragStart,
   onDragEnd,
 }: {
   task: Task
   isOwner: boolean
   dragging: boolean
+  /** Shows where a dragged card would land relative to this one. */
+  indicator?: 'before' | 'after'
   onDragStart: () => void
   onDragEnd: () => void
   onMove: (status: TaskStatus) => void
@@ -57,7 +60,8 @@ export function TaskCard({
     // Dragging is a pointer shortcut; the status select below is the keyboard and touch way.
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <li
-      className={`grid cursor-grab gap-2 rounded-xl bg-card shadow-xs active:cursor-grabbing${dragging ? ' -mt-2 h-0 overflow-hidden opacity-0' : ' border p-3.5'}`}
+      data-task-id={task.id}
+      className={`grid cursor-grab gap-2 rounded-xl bg-card shadow-xs active:cursor-grabbing${dragging ? ' -mt-2 h-0 overflow-hidden opacity-0' : ' border p-3.5'}${indicator === 'before' ? ' shadow-[0_-4px_0_0_var(--foreground)]' : ''}${indicator === 'after' ? ' shadow-[0_4px_0_0_var(--foreground)]' : ''}`}
       draggable={!editing}
       onDragStart={(event) => {
         event.dataTransfer.setData('text/plain', task.id)

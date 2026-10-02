@@ -1,5 +1,13 @@
 import { sql } from 'drizzle-orm'
-import { customType, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+  customType,
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core'
 
 const authTimestamp = customType<{ data: Date; driverData: string }>({
   dataType: () => 'text',
@@ -92,6 +100,9 @@ export const tasks = sqliteTable(
     status: text('status', { enum: ['todo', 'doing', 'done'] })
       .notNull()
       .default('todo'),
+    // Order inside a board column. Smaller comes first; a card dropped between two others
+    // gets the number halfway between them.
+    position: real('position').notNull().default(0),
     dueAt: text('due_at'),
     completedAt: text('completed_at'),
     remindBeforeMinutes: integer('remind_before_minutes'),

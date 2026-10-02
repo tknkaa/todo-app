@@ -32,15 +32,46 @@ describe('D1TaskRepository', () => {
     expect(tasks.map((t) => t.id)).toEqual(['a1'])
   })
 
-  it('orders by completion, then earliest deadline, with no deadline last', async () => {
-    await repository.create(task('none', 'alice'))
-    await repository.create(task('late', 'alice', '2030-01-02T00:00:00.000Z'))
-    await repository.create(task('soon', 'alice', '2030-01-01T00:00:00.000Z'))
-    await repository.create(task('done', 'alice', '2029-01-01T00:00:00.000Z'))
-    await repository.setStatus('alice', 'done', 'done', '2029-01-01T00:00:00.000Z')
+  it('puts a new task at the top, then lists tasks by position', async () => {
+    await repository.create(task('first', 'alice'))
+    await repository.create(task('second', 'alice'))
+    await repository.create(task('third', 'alice'))
 
-    const tasks = await repository.listByUser('alice')
-    expect(tasks.map((t) => t.id)).toEqual(['soon', 'late', 'none', 'done'])
+    expect((await repository.listByUser('alice')).map((t) => t.id)).toEqual([
+      'third',
+      'second',
+      'first',
+    ])
+  })
+
+  it('counts positions per user and per column', async () => {
+    await repository.create(task('a1', 'alice'))
+    await repository.create(task('b1', 'bob'))
+    await repository.create(task('b2', 'bob'))
+
+    expect((await repository.findOwned('alice', 'a1'))?.position).toBe(-1)
+    expect((await repository.findOwned('bob', 'b1'))?.position).toBe(-1)
+    expect((await repository.findOwned('bob', 'b2'))?.position).toBe(-2)
+  })
+
+  it('moves a task by giving it a position', async () => {
+    await repository.create(task('a', 'alice'))
+    await repository.create(task('b', 'alice'))
+    await repository.create(task('c', 'alice'))
+    // Order now: c(-3) b(-2) a(-1). Put c between b and a.
+    await repository.update('alice', 'c', { position: -1.5 })
+
+    expect((await repository.listByUser('alice')).map((t) => t.id)).toEqual(['b', 'c', 'a'])
+  })
+
+  it('returns the created task with its position', async () => {
+    const created = await repository.create(task('a1', 'alice', '2030-01-01T00:00:00.000Z'))
+    expect(created).toMatchObject({
+      id: 'a1',
+      status: 'todo',
+      dueAt: '2030-01-01T00:00:00.000Z',
+      position: -1,
+    })
   })
 
   it('does not let another user change or delete a task', async () => {
