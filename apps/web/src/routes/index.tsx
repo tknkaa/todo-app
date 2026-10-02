@@ -16,22 +16,28 @@ function Home() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    void loadTasks()
-  }, [])
-
-  async function loadTasks() {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/tasks')
-      if (!response.ok) throw new Error(await responseError(response))
-      setTasks((await response.json()) as Task[])
-      setError('')
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'タスクを読み込めませんでした。')
-    } finally {
-      setLoading(false)
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetch('/api/tasks')
+        if (!response.ok) throw new Error(await responseError(response))
+        const loadedTasks = (await response.json()) as Task[]
+        if (active) {
+          setTasks(loadedTasks)
+          setError('')
+        }
+      } catch (cause) {
+        if (active) {
+          setError(cause instanceof Error ? cause.message : 'タスクを読み込めませんでした。')
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    })()
+    return () => {
+      active = false
     }
-  }
+  }, [])
 
   async function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
