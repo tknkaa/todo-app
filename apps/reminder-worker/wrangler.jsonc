@@ -31,11 +31,14 @@
         "queue": "todo-reminders",
         "max_batch_size": 10,
         "max_retries": 3,
+        // A mail that still fails after its retries is kept here instead of being dropped.
+        "dead_letter_queue": "todo-mail-dead-letter",
       },
       {
         "queue": "todo-notifications",
         "max_batch_size": 10,
         "max_retries": 3,
+        "dead_letter_queue": "todo-mail-dead-letter",
       },
     ],
   },

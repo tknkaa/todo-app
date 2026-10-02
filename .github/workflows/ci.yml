@@ -22,6 +22,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      # The Wrangler configs (production, preview and the reminder worker) still read correctly.
+      # Nothing is uploaded.
+      - run: pnpm check:deploy
 
   # Runs the app in a real browser. Kept apart from `check` so a slow or flaky browser run does not
   # hide the result of the fast checks.

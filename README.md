@@ -12,6 +12,7 @@ Database tables are defined in `packages/db/src/schema.ts`. Generate a migration
 - [Web アプリ仕様](docs/web-app.md)
 - [テーブル定義](docs/database.md)
 - [ワーカー仕様](docs/worker.md)
+- [デプロイとプレビュー](docs/deploy.md)
 - [開発](docs/development.md)
 
 ## Local development
