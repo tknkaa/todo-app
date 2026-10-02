@@ -23,7 +23,14 @@ describe('D1AttachmentRepository', () => {
     attachments = new D1AttachmentRepository(database)
     await insertUser(database, 'alice')
     await insertUser(database, 'bob')
-    await tasks.create({ id: 't1', userId: 'alice', title: 'one', dueAt: null, completedAt: null })
+    await tasks.create({
+      id: 't1',
+      userId: 'alice',
+      title: 'one',
+      dueAt: null,
+      completedAt: null,
+      remindBeforeMinutes: null,
+    })
   })
 
   it('creates, lists, counts and finds attachments of a task', async () => {

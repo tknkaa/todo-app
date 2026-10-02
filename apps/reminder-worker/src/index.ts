@@ -22,8 +22,7 @@ export default {
 
 async function queueDueReminders(env: Env) {
   const now = new Date()
-  const until = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-  const reminders = await findDueReminders(env.DB, now.toISOString(), until.toISOString())
+  const reminders = await findDueReminders(env.DB, now.toISOString())
 
   for (const reminder of reminders) {
     await env.REMINDER_QUEUE.send(reminder)

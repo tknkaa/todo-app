@@ -144,4 +144,67 @@ describe('handleTasksRequest', () => {
     expect((await call('GET', '/api/tasks/x')).status).toBe(405)
     expect((await call('GET', '/api/other')).status).toBe(404)
   })
+
+  describe('reminder setting', () => {
+    const due = '2030-01-02T00:00:00.000Z'
+
+    it('is off by default', async () => {
+      const task = await create({ title: 'Task', dueAt: due })
+      expect(task.remindBeforeMinutes).toBeNull()
+    })
+
+    it('can be set when creating a task with a deadline', async () => {
+      const task = await create({ title: 'Task', dueAt: due, remindBeforeMinutes: 1440 })
+      expect(task.remindBeforeMinutes).toBe(1440)
+    })
+
+    it('needs a deadline', async () => {
+      const response = await call('POST', '/api/tasks', { title: 'Task', remindBeforeMinutes: 60 })
+      expect(response.status).toBe(400)
+      expect(await response.json()).toEqual({
+        error: 'リマインドを設定するには締め切りが必要です。',
+      })
+    })
+
+    it('can be turned on and off', async () => {
+      const { id } = await create({ title: 'Task', dueAt: due })
+
+      await call('PATCH', `/api/tasks/${id}`, { remindBeforeMinutes: 1440 })
+      expect((await tasks.findOwned('alice', id))?.remindBeforeMinutes).toBe(1440)
+
+      await call('PATCH', `/api/tasks/${id}`, { remindBeforeMinutes: null })
+      expect((await tasks.findOwned('alice', id))?.remindBeforeMinutes).toBeNull()
+    })
+
+    it('rejects turning it on for a task without a deadline', async () => {
+      const { id } = await create()
+      const response = await call('PATCH', `/api/tasks/${id}`, { remindBeforeMinutes: 60 })
+      expect(response.status).toBe(400)
+    })
+
+    it('turns off when the deadline is cleared and survives a deadline change', async () => {
+      const { id } = await create({ title: 'Task', dueAt: due, remindBeforeMinutes: 60 })
+
+      await call('PATCH', `/api/tasks/${id}`, { dueAt: '2030-03-01T00:00:00.000Z' })
+      expect(await tasks.findOwned('alice', id)).toMatchObject({
+        dueAt: '2030-03-01T00:00:00.000Z',
+        remindBeforeMinutes: 60,
+      })
+
+      await call('PATCH', `/api/tasks/${id}`, { dueAt: null })
+      expect(await tasks.findOwned('alice', id)).toMatchObject({
+        dueAt: null,
+        remindBeforeMinutes: null,
+      })
+    })
+
+    it('can be changed only by the owner', async () => {
+      const { id } = await create({ title: 'Task', dueAt: due })
+      await members.add(id, 'bob')
+
+      const response = await call('PATCH', `/api/tasks/${id}`, { remindBeforeMinutes: 60 }, 'bob')
+      expect(response.status).toBe(403)
+      expect((await tasks.findOwned('alice', id))?.remindBeforeMinutes).toBeNull()
+    })
+  })
 })

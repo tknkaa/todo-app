@@ -4,6 +4,8 @@ export type Task = {
   title: string
   dueAt: string | null
   completedAt: string | null
+  /** Minutes before the deadline to send a reminder. null means no reminder. */
+  remindBeforeMinutes: number | null
 }
 
 export type ReminderMessage = {

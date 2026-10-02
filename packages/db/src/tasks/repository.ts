@@ -16,6 +16,7 @@ export class D1TaskRepository {
         title: tasks.title,
         dueAt: tasks.dueAt,
         completedAt: tasks.completedAt,
+        remindBeforeMinutes: tasks.remindBeforeMinutes,
       })
       .from(tasks)
       .where(this.accessible(userId))
@@ -35,6 +36,7 @@ export class D1TaskRepository {
         title: tasks.title,
         dueAt: tasks.dueAt,
         completedAt: tasks.completedAt,
+        remindBeforeMinutes: tasks.remindBeforeMinutes,
       })
       .from(tasks)
       .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
@@ -50,18 +52,27 @@ export class D1TaskRepository {
         title: tasks.title,
         dueAt: tasks.dueAt,
         completedAt: tasks.completedAt,
+        remindBeforeMinutes: tasks.remindBeforeMinutes,
       })
       .from(tasks)
       .where(and(eq(tasks.id, taskId), this.accessible(userId)))
     return task ?? null
   }
 
-  /** Changes only the given fields, so concurrent edits of different fields both survive. */
-  async update(userId: string, taskId: string, changes: { title?: string; dueAt?: string | null }) {
-    if (changes.title === undefined && changes.dueAt === undefined) return
+  /**
+   * Changes only the given fields, so concurrent edits of different fields both survive.
+   * Changing the deadline or the reminder makes the task eligible for a new reminder.
+   */
+  async update(
+    userId: string,
+    taskId: string,
+    changes: { title?: string; dueAt?: string | null; remindBeforeMinutes?: number | null },
+  ) {
+    if (Object.values(changes).every((value) => value === undefined)) return
+    const reschedules = changes.dueAt !== undefined || changes.remindBeforeMinutes !== undefined
     await this.db
       .update(tasks)
-      .set(changes)
+      .set(reschedules ? { ...changes, reminderQueuedAt: null } : changes)
       .where(and(eq(tasks.id, taskId), this.accessible(userId)))
       .run()
   }
