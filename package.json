@@ -13,7 +13,12 @@
     "db:generate": "pnpm --filter @todo/db db:generate",
     "db:migrate:local": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --local --persist-to .wrangler/state-drizzle-baseline",
     "db:migrate:remote": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --remote",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:migrate:preview": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db-preview --remote --env preview",
+    "deploy:web": "pnpm --filter @todo/web deploy",
+    "deploy:preview": "pnpm --filter @todo/web build && pnpm --filter @todo/web exec wrangler deploy --env preview",
+    "deploy:worker": "pnpm --filter @todo/reminder-worker deploy",
+    "check:deploy": "pnpm --filter @todo/web build && pnpm --filter @todo/web exec wrangler deploy --dry-run --outdir .wrangler/dry-run && pnpm --filter @todo/web exec wrangler deploy --dry-run --env preview --outdir .wrangler/dry-run-preview && pnpm --filter @todo/reminder-worker exec wrangler deploy --dry-run --outdir .wrangler/dry-run"
   },
   "devDependencies": {
     "@playwright/test": "catalog:",

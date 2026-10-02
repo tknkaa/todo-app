@@ -45,4 +45,5 @@ docs/                  このドキュメント
 - [Web アプリ仕様](web-app.md)
 - [テーブル定義](database.md)
 - [ワーカー仕様](worker.md)
+- [デプロイとプレビュー](deploy.md)
 - [開発](development.md)
