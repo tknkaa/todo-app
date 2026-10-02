@@ -1,21 +1,42 @@
-import { findDueReminders, markReminderQueued, type ReminderMessage } from '@todo/db'
+import {
+  findDueReminders,
+  markReminderQueued,
+  type NotificationMessage,
+  type ReminderMessage,
+} from '@todo/db'
+import { reminderMail, resendRequest, taskSharedMail, type Mail } from './mail'
 
 interface Env {
   DB: D1Database
   REMINDER_QUEUE: Queue<ReminderMessage>
-  RESEND_API_KEY: string
+  /** Secret. Without it mails are only logged, which is what local development wants. */
+  RESEND_API_KEY?: string
   REMINDER_FROM: string
+  APP_URL: string
 }
+
+const NOTIFICATION_QUEUE = 'todo-notifications'
+const RETRY_DELAY_SECONDS = 60
 
 export default {
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(queueDueReminders(env))
   },
 
-  async queue(batch: MessageBatch<ReminderMessage>, env: Env) {
+  /** Reminders and share notifications arrive on two queues. A failed mail is retried on its own. */
+  async queue(batch: MessageBatch<ReminderMessage | NotificationMessage>, env: Env) {
     for (const message of batch.messages) {
-      await sendReminder(message.body, env)
-      message.ack()
+      try {
+        const mail =
+          batch.queue === NOTIFICATION_QUEUE
+            ? taskSharedMail(message.body as NotificationMessage, env.APP_URL)
+            : reminderMail(message.body as ReminderMessage, env.APP_URL)
+        await sendMail(env, mail)
+        message.ack()
+      } catch (error) {
+        console.error(`mail failed (attempt ${message.attempts})`, error)
+        message.retry({ delaySeconds: RETRY_DELAY_SECONDS })
+      }
     }
   },
 }
@@ -30,20 +51,16 @@ async function queueDueReminders(env: Env) {
   }
 }
 
-async function sendReminder(reminder: ReminderMessage, env: Env) {
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: env.REMINDER_FROM,
-      to: reminder.email,
-      subject: `締め切りが近いタスク: ${reminder.title}`,
-      text: `「${reminder.title}」の締め切りは ${reminder.dueAt} です。`,
-    }),
-  })
-
-  if (!response.ok) throw new Error(`Resend request failed: ${response.status}`)
+async function sendMail(env: Env, mail: Mail) {
+  if (!env.RESEND_API_KEY) {
+    console.log(`[mail not sent: RESEND_API_KEY is not set] to=${mail.to} subject=${mail.subject}`)
+    return
+  }
+  const { url, init } = resendRequest(mail, env.REMINDER_FROM, env.RESEND_API_KEY)
+  const response = await fetch(url, init)
+  if (!response.ok) {
+    throw new Error(
+      `Resend request failed: ${response.status} ${(await response.text()).slice(0, 200)}`,
+    )
+  }
 }

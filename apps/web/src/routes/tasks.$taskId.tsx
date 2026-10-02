@@ -24,10 +24,10 @@ function TaskPage() {
   const session = useRequireSession()
 
   if (!session) return <main className="mx-auto max-w-[760px] px-5 pt-24" />
-  return <TaskDetail taskId={taskId} userId={session.user.id} />
+  return <TaskDetail taskId={taskId} userId={session.user.id} email={session.user.email} />
 }
 
-function TaskDetail({ taskId, userId }: { taskId: string; userId: string }) {
+function TaskDetail({ taskId, userId, email }: { taskId: string; userId: string; email: string }) {
   const navigate = useNavigate()
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [saving, setSaving] = useState(false)
@@ -151,7 +151,7 @@ function TaskDetail({ taskId, userId }: { taskId: string; userId: string }) {
           }
           onLeave={() =>
             void leaveBoard(
-              `/api/tasks/${encodeURIComponent(taskId)}/members/${encodeURIComponent(userId)}`,
+              `/api/tasks/${encodeURIComponent(taskId)}/members/${encodeURIComponent(email)}`,
               'DELETE',
               '共有から外れられませんでした。',
             )

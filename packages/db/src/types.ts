@@ -31,8 +31,13 @@ export type Attachment = {
   createdAt: string
 }
 
-export type TaskMember = {
-  userId: string
-  email: string
-  name: string
+/** Mail to send, queued by the web app and sent by the worker. */
+export type NotificationMessage = {
+  type: 'task-shared'
+  to: string
+  sharedBy: string
+  taskId: string
+  taskTitle: string
+  /** Whether `to` already has an account. Only the mail text depends on it. */
+  registered: boolean
 }

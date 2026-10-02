@@ -1,5 +1,10 @@
 import { createStartHandler, defaultStreamHandler } from '@tanstack/react-start/server'
-import { D1AttachmentRepository, D1TaskMemberRepository, D1TaskRepository } from '@todo/db'
+import {
+  D1AttachmentRepository,
+  D1TaskMemberRepository,
+  D1TaskRepository,
+  type NotificationMessage,
+} from '@todo/db'
 import { getAuth } from './server/auth'
 import {
   deleteTaskAttachments,
@@ -7,6 +12,7 @@ import {
   objectStoreFromR2,
 } from './server/attachments/handler'
 import { connectLive, createNotifier } from './server/live'
+import { createMailSender } from './server/mail-queue'
 import { handleTasksRequest } from './server/tasks/handler'
 import { handleMembersRequest } from './server/tasks/members-handler'
 export { CollaborationRoom } from './durable-object'
@@ -17,6 +23,7 @@ interface Env {
   DB: D1Database
   FILES: R2Bucket
   COLLABORATION: DurableObjectNamespace
+  NOTIFICATION_QUEUE: Queue<NotificationMessage>
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL?: string
 }
@@ -52,6 +59,7 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     tasks,
     members: new D1TaskMemberRepository(env.DB),
     notify: createNotifier(env.COLLABORATION),
+    sendMail: createMailSender(env.NOTIFICATION_QUEUE),
   }
   const attachmentDeps = {
     tasks,

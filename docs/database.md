@@ -119,6 +119,18 @@ Cloudflare D1 (SQLite)。スキーマは `packages/db/src/schema.ts` (Drizzle)�
 
 インデックス: `task_members_user_id_idx` (`user_id`)
 
+## task_invites
+
+アカウントがないメールアドレスへの共有 (招待)。そのアドレスでアカウントができると、`task_members` に移して削除する。
+
+| 列           | 型   | 制約                                          | 内容                           |
+| ------------ | ---- | --------------------------------------------- | ------------------------------ |
+| `task_id`    | TEXT | PK (複合)、FK → `tasks.id` (削除時に連鎖削除) |                                |
+| `email`      | TEXT | PK (複合)                                     | 小文字にそろえたメールアドレス |
+| `created_at` | TEXT | NOT NULL                                      | 共有した日時                   |
+
+インデックス: `task_invites_email_idx` (`email`)
+
 ## マイグレーション
 
 - スキーマを変えたら `pnpm db:generate` で SQL を生成する。
