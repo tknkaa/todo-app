@@ -4,12 +4,12 @@ import {
   type NotificationMessage,
   type ReminderMessage,
 } from '@todo/db'
-import { reminderMail, resendRequest, taskSharedMail, type Mail } from './mail'
+import { isLocalApp, reminderMail, resendRequest, taskSharedMail, type Mail } from './mail'
 
 interface Env {
   DB: D1Database
   REMINDER_QUEUE: Queue<ReminderMessage>
-  /** Secret. Without it mails are only logged, which is what local development wants. */
+  /** Secret. Only local development may go without it (mails are then just logged). */
   RESEND_API_KEY?: string
   REMINDER_FROM: string
   APP_URL: string
@@ -53,6 +53,8 @@ async function queueDueReminders(env: Env) {
 
 async function sendMail(env: Env, mail: Mail) {
   if (!env.RESEND_API_KEY) {
+    // Quietly skipping in production would lose the mail and still count it as sent.
+    if (!isLocalApp(env.APP_URL)) throw new Error('RESEND_API_KEY is not set')
     console.log(`[mail not sent: RESEND_API_KEY is not set] to=${mail.to} subject=${mail.subject}`)
     return
   }

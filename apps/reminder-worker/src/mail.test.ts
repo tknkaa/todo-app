@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDue, reminderMail, resendRequest, taskSharedMail } from './mail'
+import { formatDue, isLocalApp, reminderMail, resendRequest, taskSharedMail } from './mail'
 
 const app = 'https://todo.example.com/'
 
@@ -75,4 +75,20 @@ describe('resendRequest', () => {
       text: 't',
     })
   })
+})
+
+describe('isLocalApp', () => {
+  it.each(['http://localhost:8787', 'http://127.0.0.1:8788', 'https://localhost'])(
+    'treats %s as local',
+    (url) => {
+      expect(isLocalApp(url)).toBe(true)
+    },
+  )
+
+  it.each(['https://todo.example.com', 'https://localhost.example.com', 'not a url', ''])(
+    'treats %j as not local',
+    (url) => {
+      expect(isLocalApp(url)).toBe(false)
+    },
+  )
 })

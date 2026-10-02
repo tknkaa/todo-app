@@ -68,3 +68,13 @@ export function resendRequest(mail: Mail, from: string, apiKey: string) {
     } satisfies RequestInit,
   }
 }
+
+/** Local development: nothing is sent there, so a missing Resend key is expected. */
+export function isLocalApp(appUrl: string) {
+  try {
+    const { hostname } = new URL(appUrl)
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
+  } catch {
+    return false
+  }
+}
