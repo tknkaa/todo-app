@@ -3,10 +3,17 @@
   "dialect": "sqlite",
   "entries": [
     {
-      "idx": 0,
+      "idx": 1,
       "version": "6",
       "when": 1790923163499,
       "tag": "0001_initial",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790924121845,
+      "tag": "0002_add_better_auth_tables",
       "breakpoints": true
     }
   ]

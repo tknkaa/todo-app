@@ -1,13 +1,85 @@
 import { sql } from 'drizzle-orm'
-import { index, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { customType, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+
+const authTimestamp = customType<{ data: Date; driverData: string }>({
+  dataType: () => 'text',
+  toDriver: (value) => value.toISOString(),
+  fromDriver: (value) => new Date(value),
+})
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey().notNull(),
+  name: text('name').notNull().default(''),
   email: text('email').notNull().unique(),
-  createdAt: text('created_at')
+  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+  image: text('image'),
+  createdAt: authTimestamp('created_at')
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: authTimestamp('updated_at')
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 })
+
+export const authSessions = sqliteTable(
+  'sessions',
+  {
+    id: text('id').primaryKey().notNull(),
+    expiresAt: authTimestamp('expires_at').notNull(),
+    token: text('token').notNull().unique(),
+    createdAt: authTimestamp('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: authTimestamp('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (table) => [index('sessions_user_id_idx').on(table.userId)],
+)
+
+export const authAccounts = sqliteTable(
+  'accounts',
+  {
+    id: text('id').primaryKey().notNull(),
+    accountId: text('account_id').notNull(),
+    providerId: text('provider_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    idToken: text('id_token'),
+    accessTokenExpiresAt: authTimestamp('access_token_expires_at'),
+    refreshTokenExpiresAt: authTimestamp('refresh_token_expires_at'),
+    scope: text('scope'),
+    password: text('password'),
+    createdAt: authTimestamp('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: authTimestamp('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index('accounts_user_id_idx').on(table.userId)],
+)
+
+export const authVerifications = sqliteTable(
+  'verifications',
+  {
+    id: text('id').primaryKey().notNull(),
+    identifier: text('identifier').notNull(),
+    value: text('value').notNull(),
+    expiresAt: authTimestamp('expires_at').notNull(),
+    createdAt: authTimestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: authTimestamp('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index('verifications_identifier_idx').on(table.identifier)],
+)
 
 export const tasks = sqliteTable(
   'tasks',

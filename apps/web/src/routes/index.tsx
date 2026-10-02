@@ -1,37 +1,65 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Task } from '@todo/domain'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { authClient } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home() {
+  const navigate = useNavigate()
+  const { data: session, isPending } = authClient.useSession()
+
+  useEffect(() => {
+    if (!isPending && !session) void navigate({ to: '/login' })
+  }, [isPending, session, navigate])
+
+  if (!session) return <main className="mx-auto max-w-[800px] px-5 pt-24" />
+
+  return (
+    <TaskBoard
+      email={session.user.email}
+      onSignOut={async () => {
+        await authClient.signOut()
+        await navigate({ to: '/login' })
+      }}
+    />
+  )
+}
+
+function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promise<void> }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    void loadTasks()
-  }, [])
-
-  async function loadTasks() {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/tasks')
-      if (!response.ok) throw new Error(await responseError(response))
-      setTasks((await response.json()) as Task[])
-      setError('')
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'タスクを読み込めませんでした。')
-    } finally {
-      setLoading(false)
+    let active = true
+    void (async () => {
+      try {
+        const response = await fetch('/api/tasks')
+        if (!response.ok) throw new Error(await responseError(response))
+        const loadedTasks = (await response.json()) as Task[]
+        if (active) {
+          setTasks(loadedTasks)
+          setError('')
+        }
+      } catch (cause) {
+        if (active) {
+          setError(cause instanceof Error ? cause.message : 'タスクを読み込めませんでした。')
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    })()
+    return () => {
+      active = false
     }
-  }
+  }, [])
 
   async function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -95,6 +123,12 @@ function Home() {
   return (
     <main className="mx-auto w-full max-w-[800px] px-5 pt-14 pb-8 md:pt-22">
       <header className="mb-10">
+        <div className="mb-6 flex items-center justify-end gap-3 text-xs text-muted-foreground">
+          <span>{email}</span>
+          <Button variant="ghost" size="sm" type="button" onClick={() => void onSignOut()}>
+            ログアウト
+          </Button>
+        </div>
         <span className="text-[11px] font-bold tracking-[0.18em] text-muted-foreground">
           YOUR SPACE
         </span>
