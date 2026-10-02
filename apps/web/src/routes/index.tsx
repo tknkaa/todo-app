@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import type { Task } from '@todo/domain'
+import type { Task } from '@todo/db'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { authClient } from '@/lib/auth-client'
+import { formatDueDate } from '@/lib/format'
+import { completionTimestamp } from '@/lib/task-input'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -101,7 +103,7 @@ function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promi
       setTasks((current) =>
         current.map((item) =>
           item.id === task.id
-            ? { ...item, completedAt: completed ? new Date().toISOString() : null }
+            ? { ...item, completedAt: completionTimestamp(completed, new Date()) }
             : item,
         ),
       )
@@ -257,13 +259,4 @@ function EmptyMessage({ children }: { children: ReactNode }) {
 async function responseError(response: Response) {
   const body = (await response.json().catch(() => null)) as { error?: string } | null
   return body?.error ?? 'リクエストに失敗しました。'
-}
-
-function formatDueDate(value: string) {
-  return new Intl.DateTimeFormat('ja-JP', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value))
 }

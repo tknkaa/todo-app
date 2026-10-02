@@ -1,46 +1,29 @@
-import {
-  createTask,
-  deleteTask,
-  listTasks,
-  setTaskCompleted,
-  TaskInputError,
-  type TaskRepository,
-} from '@todo/application'
+import type { D1TaskRepository } from '@todo/db'
+import { completionTimestamp, parseCreateTaskInput } from '@/lib/task-input'
 
 export async function handleTasksRequest(
   request: Request,
-  repository: TaskRepository,
+  repository: D1TaskRepository,
   userId: string,
+  now: () => Date = () => new Date(),
 ): Promise<Response> {
   const { pathname } = new URL(request.url)
 
   if (pathname === '/api/tasks') {
     if (request.method === 'GET') {
-      return json(await listTasks(repository, userId))
+      return json(await repository.listByUser(userId))
     }
 
     if (request.method === 'POST') {
       const body = await readJsonObject(request)
       if (!body) return json({ error: 'Invalid JSON body' }, 400)
 
-      const title = typeof body.title === 'string' ? body.title : ''
-      const dueAt = body.dueAt
-      if (dueAt !== undefined && dueAt !== null && dueAt !== '' && typeof dueAt !== 'string') {
-        return json({ error: '締め切りの日時が正しくありません。' }, 400)
-      }
+      const parsed = parseCreateTaskInput(body)
+      if (!parsed.ok) return json({ error: parsed.message }, 400)
 
-      try {
-        const task = await createTask(repository, {
-          id: crypto.randomUUID(),
-          userId,
-          title,
-          dueAt: typeof dueAt === 'string' && dueAt ? dueAt : null,
-        })
-        return json(task, 201)
-      } catch (error) {
-        if (error instanceof TaskInputError) return json({ error: error.message }, 400)
-        throw error
-      }
+      const task = { id: crypto.randomUUID(), userId, completedAt: null, ...parsed.value }
+      await repository.create(task)
+      return json(task, 201)
     }
 
     return json({ error: 'Method not allowed' }, 405, { Allow: 'GET, POST' })
@@ -62,12 +45,12 @@ export async function handleTasksRequest(
     if (typeof body.completed !== 'boolean') {
       return json({ error: 'completed は boolean で指定してください。' }, 400)
     }
-    await setTaskCompleted(repository, userId, taskId, body.completed)
+    await repository.setCompleted(userId, taskId, completionTimestamp(body.completed, now()))
     return new Response(null, { status: 204 })
   }
 
   if (request.method === 'DELETE') {
-    await deleteTask(repository, userId, taskId)
+    await repository.delete(userId, taskId)
     return new Response(null, { status: 204 })
   }
 

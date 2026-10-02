@@ -1,12 +1,11 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
-import type { TaskRepository } from '@todo/application'
-import type { Task } from '@todo/domain'
+import type { Task } from '../types'
 import { tasks, users } from '../schema'
 
 export type TodoDatabase = D1Database
 
-export class D1TaskRepository implements TaskRepository {
+export class D1TaskRepository {
   constructor(private readonly database: TodoDatabase) {}
 
   async listByUser(userId: string): Promise<Task[]> {

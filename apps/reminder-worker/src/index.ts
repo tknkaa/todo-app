@@ -1,5 +1,4 @@
-import { findDueReminders, markReminderQueued } from '@todo/db'
-import type { ReminderMessage } from '@todo/domain'
+import { findDueReminders, markReminderQueued, type ReminderMessage } from '@todo/db'
 
 interface Env {
   DB: D1Database
