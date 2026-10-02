@@ -1,7 +1,7 @@
 {
   "name": "@todo/web",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "pnpm build && wrangler dev --local --persist-to .wrangler/state-drizzle-baseline",
