@@ -65,6 +65,11 @@ export async function handleTasksRequest(
     return json({ error: 'Invalid task id' }, 400)
   }
 
+  if (request.method === 'GET') {
+    const task = await deps.tasks.findAccessible(userId, taskId)
+    return task ? json(task) : notFound()
+  }
+
   if (request.method === 'PATCH') {
     const body = await readJsonObject(request)
     if (!body) return json({ error: 'Invalid JSON body' }, 400)
@@ -104,7 +109,7 @@ export async function handleTasksRequest(
     return new Response(null, { status: 204 })
   }
 
-  return json({ error: 'Method not allowed' }, 405, { Allow: 'PATCH, DELETE' })
+  return json({ error: 'Method not allowed' }, 405, { Allow: 'GET, PATCH, DELETE' })
 }
 
 function notFound() {

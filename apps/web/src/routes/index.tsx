@@ -7,7 +7,9 @@ import type { TaskChanges } from '@/components/task-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useLive } from '@/hooks/use-live'
+import { useRequireSession } from '@/hooks/use-require-session'
 import { authClient } from '@/lib/auth-client'
+import { responseError } from '@/lib/api'
 import { readReminder } from '@/lib/reminder'
 import { moveTask } from '@/lib/status'
 
@@ -17,11 +19,7 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   const navigate = useNavigate()
-  const { data: session, isPending } = authClient.useSession()
-
-  useEffect(() => {
-    if (!isPending && !session) void navigate({ to: '/login' })
-  }, [isPending, session, navigate])
+  const session = useRequireSession()
 
   if (!session) return <main className="mx-auto max-w-[800px] px-5 pt-24" />
 
@@ -280,9 +278,4 @@ async function fetchTasks() {
   const response = await fetch('/api/tasks')
   if (!response.ok) throw new Error(await responseError(response))
   return (await response.json()) as Task[]
-}
-
-async function responseError(response: Response) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null
-  return body?.error ?? 'リクエストに失敗しました。'
 }

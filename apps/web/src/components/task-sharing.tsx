@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { TaskMember } from '@todo/db'
 import { Button } from '@/components/ui/button'
+import { messageOf, responseError } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 
 export function TaskSharing({ taskId, title }: { taskId: string; title: string }) {
@@ -100,13 +101,4 @@ export function TaskSharing({ taskId, title }: { taskId: string; title: string }
       )}
     </div>
   )
-}
-
-async function responseError(response: Response) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null
-  return body?.error ?? 'リクエストに失敗しました。'
-}
-
-function messageOf(cause: unknown, fallback: string) {
-  return cause instanceof Error ? cause.message : fallback
 }
