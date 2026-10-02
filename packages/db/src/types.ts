@@ -24,3 +24,9 @@ export type Attachment = {
   r2Key: string
   createdAt: string
 }
+
+export type TaskMember = {
+  userId: string
+  email: string
+  name: string
+}

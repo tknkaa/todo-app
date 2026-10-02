@@ -15,7 +15,7 @@ Cloudflare 上で動く Web アプリ (TanStack Start) と、リマインド用�
 | Queues                           | リマインドメールの送信キュー                            | 実装済み                                                                                           |
 | Resend                           | リマインドメールの送信                                  | コードあり。API キーとドメインの設定は未了                                                         |
 | R2                               | タスクのファイル添付                                    | 実装済み (`FILES`) → [Web アプリ仕様](web-app.md)                                                  |
-| Durable Objects                  | タスクの同時編集                                        | 予定。空のクラスと binding のみ (`COLLABORATION`)                                                  |
+| Durable Objects                  | 共有したタスクの変更をリアルタイムに通知 (WebSocket)    | 実装済み (`COLLABORATION`) → [Web アプリ仕様](web-app.md)                                          |
 
 ## リポジトリ構成
 
@@ -36,6 +36,7 @@ docs/                  このドキュメント
 ## データの流れ
 
 - **タスク操作:** ブラウザ → `apps/web` の `/api/tasks` → D1。リクエストごとにセッションを確認し、ログインしていなければ 401 を返す。
+- **リアルタイム通知:** タスクの変更後、`apps/web` が、そのタスクを見られる全員の Durable Object に通知する。各ブラウザは WebSocket でつながり、通知を受けると一覧を取得し直す。
 - **リマインド:** Cron → `reminder-worker` が D1 から対象タスクを検索 → Queues に投入 → 同じ Worker のコンシューマが Resend でメール送信。
 
 ## ドキュメント一覧

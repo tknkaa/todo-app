@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { completionTimestamp, parseCreateTaskInput } from './task-input'
+import { completionTimestamp, parseCreateTaskInput, parseUpdateTaskInput } from './task-input'
 
 describe('parseCreateTaskInput', () => {
   it('trims the title and converts the deadline to UTC', () => {
@@ -43,5 +43,46 @@ describe('completionTimestamp', () => {
 
   it('returns null when reopening', () => {
     expect(completionTimestamp(false, now)).toBeNull()
+  })
+})
+
+describe('parseUpdateTaskInput', () => {
+  it('keeps only the fields that were given', () => {
+    expect(parseUpdateTaskInput({ completed: true })).toEqual({
+      ok: true,
+      value: { completed: true },
+    })
+    expect(parseUpdateTaskInput({ title: '  new  ' })).toEqual({
+      ok: true,
+      value: { title: 'new' },
+    })
+  })
+
+  it('normalizes the deadline and allows clearing it', () => {
+    expect(parseUpdateTaskInput({ dueAt: '2026-10-03T09:30:00+09:00' })).toEqual({
+      ok: true,
+      value: { dueAt: '2026-10-03T00:30:00.000Z' },
+    })
+    expect(parseUpdateTaskInput({ dueAt: null })).toEqual({ ok: true, value: { dueAt: null } })
+    expect(parseUpdateTaskInput({ dueAt: '' })).toEqual({ ok: true, value: { dueAt: null } })
+  })
+
+  it('requires at least one field', () => {
+    expect(parseUpdateTaskInput({})).toEqual({
+      ok: false,
+      message: '変更する項目を指定してください。',
+    })
+  })
+
+  it.each([
+    [{ title: '   ' }, 'タイトルは1〜200文字で入力してください。'],
+    [{ dueAt: 'nope' }, '締め切りの日時が正しくありません。'],
+    [{ completed: 'yes' }, 'completed は boolean で指定してください。'],
+  ])('rejects %j', (input, message) => {
+    expect(parseUpdateTaskInput(input)).toEqual({ ok: false, message })
+  })
+
+  it('rejects a body that is not an object', () => {
+    expect(parseUpdateTaskInput(null).ok).toBe(false)
   })
 })

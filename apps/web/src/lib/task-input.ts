@@ -3,23 +3,30 @@ import * as v from 'valibot'
 const titleMessage = 'タイトルは1〜200文字で入力してください。'
 const dueAtMessage = '締め切りの日時が正しくありません。'
 
+const titleSchema = v.pipe(
+  v.string(titleMessage),
+  v.trim(),
+  v.minLength(1, titleMessage),
+  v.maxLength(200, titleMessage),
+)
+
+const dueAtSchema = v.nullable(
+  v.pipe(
+    v.string(dueAtMessage),
+    v.check((value) => value === '' || !Number.isNaN(Date.parse(value)), dueAtMessage),
+    v.transform((value) => (value === '' ? null : new Date(value).toISOString())),
+  ),
+)
+
 const createTaskSchema = v.object({
-  title: v.pipe(
-    v.string(titleMessage),
-    v.trim(),
-    v.minLength(1, titleMessage),
-    v.maxLength(200, titleMessage),
-  ),
-  dueAt: v.optional(
-    v.nullable(
-      v.pipe(
-        v.string(dueAtMessage),
-        v.check((value) => value === '' || !Number.isNaN(Date.parse(value)), dueAtMessage),
-        v.transform((value) => (value === '' ? null : new Date(value).toISOString())),
-      ),
-    ),
-    null,
-  ),
+  title: titleSchema,
+  dueAt: v.optional(dueAtSchema, null),
+})
+
+const updateTaskSchema = v.object({
+  title: v.optional(titleSchema),
+  dueAt: v.optional(dueAtSchema),
+  completed: v.optional(v.boolean('completed は boolean で指定してください。')),
 })
 
 export type CreateTaskInput = v.InferOutput<typeof createTaskSchema>
@@ -35,4 +42,23 @@ export function parseCreateTaskInput(input: unknown): ParseResult {
 
 export function completionTimestamp(completed: boolean, now: Date): string | null {
   return completed ? now.toISOString() : null
+}
+
+export type UpdateTaskInput = v.InferOutput<typeof updateTaskSchema>
+
+export type UpdateParseResult =
+  | { ok: true; value: UpdateTaskInput }
+  | { ok: false; message: string }
+
+/** Validates a partial update. Only the given fields change; at least one is required. */
+export function parseUpdateTaskInput(input: unknown): UpdateParseResult {
+  const result = v.safeParse(updateTaskSchema, input)
+  if (!result.success) {
+    return { ok: false, message: result.issues[0]?.message ?? '入力を確認してください。' }
+  }
+  const { title, dueAt, completed } = result.output
+  if (title === undefined && dueAt === undefined && completed === undefined) {
+    return { ok: false, message: '変更する項目を指定してください。' }
+  }
+  return { ok: true, value: result.output }
 }

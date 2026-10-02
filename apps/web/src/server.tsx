@@ -1,12 +1,14 @@
 import { createStartHandler, defaultStreamHandler } from '@tanstack/react-start/server'
-import { D1AttachmentRepository, D1TaskRepository } from '@todo/db'
+import { D1AttachmentRepository, D1TaskMemberRepository, D1TaskRepository } from '@todo/db'
 import { getAuth } from './server/auth'
 import {
   deleteTaskAttachments,
   handleAttachmentsRequest,
   objectStoreFromR2,
 } from './server/attachments/handler'
+import { connectLive, createNotifier } from './server/live'
 import { handleTasksRequest } from './server/tasks/handler'
+import { handleMembersRequest } from './server/tasks/members-handler'
 export { CollaborationRoom } from './durable-object'
 
 const startHandler = createStartHandler(defaultStreamHandler)
@@ -14,6 +16,7 @@ const startHandler = createStartHandler(defaultStreamHandler)
 interface Env {
   DB: D1Database
   FILES: R2Bucket
+  COLLABORATION: DurableObjectNamespace
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL?: string
 }
@@ -24,7 +27,11 @@ export default {
     if (url.pathname.startsWith('/api/auth/')) {
       return getAuth(env).handler(request)
     }
-    if (url.pathname.startsWith('/api/tasks') || url.pathname.startsWith('/api/attachments')) {
+    if (
+      url.pathname.startsWith('/api/tasks') ||
+      url.pathname.startsWith('/api/attachments') ||
+      url.pathname === '/api/live'
+    ) {
       return handleApi(request, env)
     }
     return startHandler(request)
@@ -36,7 +43,16 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
   if (!session) return Response.json({ error: 'ログインしてください。' }, { status: 401 })
 
   const userId = session.user.id
+  if (new URL(request.url).pathname === '/api/live') {
+    return connectLive(request, env.COLLABORATION, userId)
+  }
+
   const tasks = new D1TaskRepository(env.DB)
+  const taskDeps = {
+    tasks,
+    members: new D1TaskMemberRepository(env.DB),
+    notify: createNotifier(env.COLLABORATION),
+  }
   const attachmentDeps = {
     tasks,
     attachments: new D1AttachmentRepository(env.DB),
@@ -59,5 +75,9 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       // The task handler below reports invalid ids.
     }
   }
-  return handleTasksRequest(request, tasks, userId)
+  if (/^\/api\/tasks\/[^/]+\/members(\/[^/]+)?$/.test(pathname)) {
+    return handleMembersRequest(request, taskDeps, userId)
+  }
+
+  return handleTasksRequest(request, taskDeps, userId)
 }

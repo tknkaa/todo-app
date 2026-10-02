@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Task } from '@todo/db'
 import { TaskAttachments } from '@/components/task-attachments'
+import { TaskSharing } from '@/components/task-sharing'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { useLive } from '@/hooks/use-live'
 import { authClient } from '@/lib/auth-client'
-import { formatDueDate } from '@/lib/format'
+import { formatDueDate, toDateTimeLocal } from '@/lib/format'
 import { completionTimestamp } from '@/lib/task-input'
 
 export const Route = createFileRoute('/')({
@@ -25,6 +27,7 @@ function Home() {
 
   return (
     <TaskBoard
+      userId={session.user.id}
       email={session.user.email}
       onSignOut={async () => {
         await authClient.signOut()
@@ -34,19 +37,34 @@ function Home() {
   )
 }
 
-function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promise<void> }) {
+function TaskBoard({
+  userId,
+  email,
+  onSignOut,
+}: {
+  userId: string
+  email: string
+  onSignOut: () => Promise<void>
+}) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const loadTasks = useCallback(async () => {
+    try {
+      setTasks(await fetchTasks())
+      setError('')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'タスクを読み込めませんでした。')
+    }
+  }, [])
+
   useEffect(() => {
     let active = true
     void (async () => {
       try {
-        const response = await fetch('/api/tasks')
-        if (!response.ok) throw new Error(await responseError(response))
-        const loadedTasks = (await response.json()) as Task[]
+        const loadedTasks = await fetchTasks()
         if (active) {
           setTasks(loadedTasks)
           setError('')
@@ -63,6 +81,9 @@ function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promi
       active = false
     }
   }, [])
+
+  // Another tab, or someone the task is shared with, changed something.
+  useLive(() => void loadTasks())
 
   async function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -120,6 +141,35 @@ function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promi
       setTasks((current) => current.filter((task) => task.id !== taskId))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'タスクを削除できませんでした。')
+    }
+  }
+
+  async function saveTask(task: Task, changes: { title: string; dueAt: string | null }) {
+    try {
+      const response = await fetch(`/api/tasks/${encodeURIComponent(task.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes),
+      })
+      if (!response.ok) throw new Error(await responseError(response))
+      await loadTasks()
+      return true
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'タスクを更新できませんでした。')
+      return false
+    }
+  }
+
+  async function leaveTask(taskId: string) {
+    try {
+      const response = await fetch(
+        `/api/tasks/${encodeURIComponent(taskId)}/members/${encodeURIComponent(userId)}`,
+        { method: 'DELETE' },
+      )
+      if (!response.ok) throw new Error(await responseError(response))
+      setTasks((current) => current.filter((task) => task.id !== taskId))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '共有から外れられませんでした。')
     }
   }
 
@@ -206,38 +256,15 @@ function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promi
         ) : (
           <ul className="grid gap-2">
             {tasks.map((task) => (
-              <li className="grid gap-1 rounded-xl border bg-card px-4 py-3.5" key={task.id}>
-                <div className="flex min-h-[40px] items-center gap-3.5">
-                  <Checkbox
-                    aria-label={`${task.title}を${task.completedAt ? '未完了に戻す' : '完了にする'}`}
-                    checked={Boolean(task.completedAt)}
-                    onCheckedChange={() => void toggleTask(task)}
-                  />
-                  <div className="grid min-w-0 flex-1 gap-1">
-                    <span
-                      className={`break-words text-sm font-medium${task.completedAt ? ' text-muted-foreground line-through' : ''}`}
-                    >
-                      {task.title}
-                    </span>
-                    {task.dueAt && (
-                      <time className="text-[11px] text-muted-foreground" dateTime={task.dueAt}>
-                        {formatDueDate(task.dueAt)}
-                      </time>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-destructive"
-                    type="button"
-                    onClick={() => void removeTask(task.id)}
-                    aria-label={`${task.title}を削除`}
-                  >
-                    削除
-                  </Button>
-                </div>
-                <TaskAttachments taskId={task.id} title={task.title} />
-              </li>
+              <TaskRow
+                key={task.id}
+                task={task}
+                isOwner={task.userId === userId}
+                onToggle={() => void toggleTask(task)}
+                onRemove={() => void removeTask(task.id)}
+                onLeave={() => void leaveTask(task.id)}
+                onSave={(changes) => saveTask(task, changes)}
+              />
             ))}
           </ul>
         )}
@@ -249,12 +276,151 @@ function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promi
   )
 }
 
+function TaskRow({
+  task,
+  isOwner,
+  onToggle,
+  onRemove,
+  onLeave,
+  onSave,
+}: {
+  task: Task
+  isOwner: boolean
+  onToggle: () => void
+  onRemove: () => void
+  onLeave: () => void
+  onSave: (changes: { title: string; dueAt: string | null }) => Promise<boolean>
+}) {
+  const [editing, setEditing] = useState(false)
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const dueAtLocal = String(formData.get('dueAt') ?? '')
+    const saved = await onSave({
+      title: String(formData.get('title') ?? ''),
+      dueAt: dueAtLocal ? new Date(dueAtLocal).toISOString() : null,
+    })
+    if (saved) setEditing(false)
+  }
+
+  return (
+    <li className="grid gap-1 rounded-xl border bg-card px-4 py-3.5">
+      <div className="flex min-h-[40px] items-center gap-3.5">
+        <Checkbox
+          aria-label={`${task.title}を${task.completedAt ? '未完了に戻す' : '完了にする'}`}
+          checked={Boolean(task.completedAt)}
+          onCheckedChange={onToggle}
+        />
+        {editing ? (
+          <form
+            className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_210px_auto]"
+            onSubmit={submit}
+          >
+            <Input
+              name="title"
+              className="h-9"
+              defaultValue={task.title}
+              aria-label="タスク名"
+              maxLength={200}
+              required
+            />
+            <Input
+              name="dueAt"
+              type="datetime-local"
+              className="h-9"
+              defaultValue={toDateTimeLocal(task.dueAt)}
+              aria-label="締め切り"
+            />
+            <div className="flex gap-1">
+              <Button className="h-9" type="submit">
+                保存
+              </Button>
+              <Button
+                className="h-9"
+                variant="ghost"
+                type="button"
+                onClick={() => setEditing(false)}
+              >
+                取消
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="grid min-w-0 flex-1 gap-1">
+              <span
+                className={`break-words text-sm font-medium${task.completedAt ? ' text-muted-foreground line-through' : ''}`}
+              >
+                {task.title}
+              </span>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                {task.dueAt && <time dateTime={task.dueAt}>{formatDueDate(task.dueAt)}</time>}
+                {!isOwner && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
+                    共有されたタスク
+                  </span>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              type="button"
+              onClick={() => setEditing(true)}
+              aria-label={`${task.title}を編集`}
+            >
+              編集
+            </Button>
+            {isOwner ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                type="button"
+                onClick={onRemove}
+                aria-label={`${task.title}を削除`}
+              >
+                削除
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                type="button"
+                onClick={onLeave}
+                aria-label={`${task.title}の共有から外れる`}
+              >
+                共有から外れる
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+      {isOwner && (
+        <div className="flex flex-wrap gap-x-4">
+          <TaskAttachments taskId={task.id} title={task.title} />
+          <TaskSharing taskId={task.id} title={task.title} />
+        </div>
+      )}
+    </li>
+  )
+}
+
 function EmptyMessage({ children }: { children: ReactNode }) {
   return (
     <p className="rounded-xl border border-dashed px-5 py-7 text-center text-sm text-muted-foreground">
       {children}
     </p>
   )
+}
+
+async function fetchTasks() {
+  const response = await fetch('/api/tasks')
+  if (!response.ok) throw new Error(await responseError(response))
+  return (await response.json()) as Task[]
 }
 
 async function responseError(response: Response) {
