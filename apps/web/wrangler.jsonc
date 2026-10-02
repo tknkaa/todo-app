@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "todo-web",
+  "name": "kanban-web",
   "main": "dist/server/server.js",
   "compatibility_date": "2026-01-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -11,7 +11,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "todo-db",
+      "database_name": "kanban-db",
       "database_id": "replace-with-production-database-id",
       "migrations_dir": "../../packages/db/migrations",
     },
@@ -19,7 +19,7 @@
   "r2_buckets": [
     {
       "binding": "FILES",
-      "bucket_name": "todo-files",
+      "bucket_name": "kanban-files",
     },
   ],
   "queues": {
@@ -27,7 +27,7 @@
     "producers": [
       {
         "binding": "NOTIFICATION_QUEUE",
-        "queue": "todo-notifications",
+        "queue": "kanban-notifications",
       },
     ],
   },
@@ -51,11 +51,11 @@
   // not inherited by an environment, so each one is written out again. See docs/deploy.md.
   "env": {
     "preview": {
-      "name": "todo-web-preview",
+      "name": "kanban-web-preview",
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "todo-db-preview",
+          "database_name": "kanban-db-preview",
           "database_id": "replace-with-preview-database-id",
           "migrations_dir": "../../packages/db/migrations",
         },
@@ -63,14 +63,14 @@
       "r2_buckets": [
         {
           "binding": "FILES",
-          "bucket_name": "todo-files-preview",
+          "bucket_name": "kanban-files-preview",
         },
       ],
       "queues": {
         "producers": [
           {
             "binding": "NOTIFICATION_QUEUE",
-            "queue": "todo-notifications-preview",
+            "queue": "kanban-notifications-preview",
           },
         ],
       },

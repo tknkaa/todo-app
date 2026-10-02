@@ -147,4 +147,4 @@ Cloudflare D1 (SQLite)。スキーマは `packages/db/src/schema.ts` (Drizzle)�
 just sql "select * from tasks"
 ```
 
-`just` が使えない場合は、`apps/web` で `pnpm exec wrangler d1 execute todo-db --local --persist-to .wrangler/state-drizzle-baseline --command "..."` を実行する。
+`just` が使えない場合は、`apps/web` で `pnpm exec wrangler d1 execute kanban-db --local --persist-to .wrangler/state-drizzle-baseline --command "..."` を実行する。
