@@ -96,7 +96,11 @@ export function KanbanBoard({
                 onMove={(next) =>
                   onMove(task.id, next, dropPosition(columns[next], task.id, null, 'after'))
                 }
-                indicator={dropAt?.targetId === task.id ? dropAt.placement : undefined}
+                indicator={
+                  dropAt?.targetId === task.id && dragging !== task.id
+                    ? dropAt.placement
+                    : undefined
+                }
                 onRemove={() => onRemove(task.id)}
                 onLeave={() => onLeave(task.id)}
                 onSave={(changes) => onSave(task, changes)}
@@ -121,8 +125,7 @@ export function KanbanBoard({
 function dropTarget(event: React.DragEvent, status: TaskStatus): DropAt {
   const card = (event.target as HTMLElement).closest<HTMLElement>('li[data-task-id]')
   const rect = card?.getBoundingClientRect()
-  // A card that is being dragged is collapsed to nothing, so it is not a target.
-  if (!card || !rect || rect.height === 0) return { status, targetId: null, placement: 'after' }
+  if (!card || !rect) return { status, targetId: null, placement: 'after' }
   return {
     status,
     targetId: card.dataset.taskId ?? null,
