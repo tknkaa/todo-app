@@ -2,7 +2,7 @@
 
 ![構成図](architecture.png)
 
-Cloudflare 上で動く Web アプリ (TanStack Start) と、メール送信用のワーカー (リマインド、共有の通知) の 2 つの Worker で構成する。ブランチや PR の動作確認用に、Web アプリのプレビュー用の Worker もある ([デプロイとプレビュー](deploy.md))。
+Cloudflare 上で動く Web アプリ (TanStack Start) と、メール送信用のワーカー (リマインド、共有の通知) の 2 つの Worker で構成する。ブランチや PR の動作確認には、Web アプリの Worker Previews (ブランチごとのプレビュー) を使う ([デプロイとプレビュー](deploy.md))。
 
 図は大まかなもので、共有の通知用のキュー (`kanban-notifications`) などは描いていない。
 

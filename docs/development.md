@@ -17,14 +17,14 @@ pnpm dev                                           # http://localhost:8787
 pnpm check   # フォーマット、lint、型チェック、テストをまとめて実行
 ```
 
-| コマンド                            | 内容                                                                                                      |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `pnpm format` / `pnpm format:check` | Oxfmt                                                                                                     |
-| `pnpm lint`                         | Oxlint                                                                                                    |
-| `pnpm typecheck`                    | TypeScript (`apps/web` はビルドも行う)                                                                    |
-| `pnpm test`                         | Vitest (`apps/web`、`apps/reminder-worker`、`packages/db`)                                                |
-| `pnpm test:e2e`                     | Playwright。本物のブラウザでアプリを動かす (下を参照)                                                     |
-| `pnpm check:deploy`                 | Wrangler の設定 (本番、プレビュー、ワーカー) が読めることの確認 (アップロードなし。[デプロイ](deploy.md)) |
+| コマンド                            | 内容                                                                                                 |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm format` / `pnpm format:check` | Oxfmt                                                                                                |
+| `pnpm lint`                         | Oxlint                                                                                               |
+| `pnpm typecheck`                    | TypeScript (`apps/web` はビルドも行う)                                                               |
+| `pnpm test`                         | Vitest (`apps/web`、`apps/reminder-worker`、`packages/db`)                                           |
+| `pnpm test:e2e`                     | Playwright。本物のブラウザでアプリを動かす (下を参照)                                                |
+| `pnpm check:deploy`                 | Wrangler の設定 (Web とメールの Worker) が読めることの確認 (アップロードなし。[デプロイ](deploy.md)) |
 
 CI (`.github/workflows/ci.yml`) は、PR と main への push で、`check` (`pnpm check` と `pnpm check:deploy`) と `e2e` (`pnpm test:e2e`) の 2 つのジョブを実行する。E2E は遅く不安定になりやすいので、速いチェックの結果を隠さないよう、別のジョブにしている。
 

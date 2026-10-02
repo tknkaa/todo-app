@@ -51,45 +51,41 @@
     },
   ],
 
-  // Preview deployments (a branch or a pull request) run as their own Worker with their own
-  // database, bucket and queue, so trying a change never touches production data. Bindings are
-  // not inherited by an environment, so each one is written out again. See docs/deploy.md.
-  "env": {
-    "preview": {
-      "name": "kanban-web-preview",
-      "vars": {
-        "BETTER_AUTH_URL": "https://kanban-web-preview.ut-code.workers.dev",
+  // Worker Previews: every branch other than main gets its own Preview of this Worker, at
+  // `<branch>-kanban-web.ut-code.workers.dev`. Durable Objects are separate per Preview on their
+  // own. D1, R2 and queues would be shared with production unless they are named here, so they
+  // point at the preview resources (shared by all Previews). BETTER_AUTH_URL differs per Preview
+  // and is passed by scripts/deploy-preview.sh. See docs/deploy.md.
+  "previews": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "kanban-db-preview",
+        "database_id": "3e03d55d-c10d-46fc-8014-9adcec53b7b2",
+        "migrations_dir": "../../packages/db/migrations",
       },
-      "d1_databases": [
+    ],
+    "r2_buckets": [
+      {
+        "binding": "FILES",
+        "bucket_name": "kanban-files-preview",
+      },
+    ],
+    "queues": {
+      "producers": [
         {
-          "binding": "DB",
-          "database_name": "kanban-db-preview",
-          "database_id": "3e03d55d-c10d-46fc-8014-9adcec53b7b2",
-          "migrations_dir": "../../packages/db/migrations",
+          "binding": "NOTIFICATION_QUEUE",
+          "queue": "kanban-notifications-preview",
         },
       ],
-      "r2_buckets": [
+    },
+    "durable_objects": {
+      "bindings": [
         {
-          "binding": "FILES",
-          "bucket_name": "kanban-files-preview",
+          "name": "COLLABORATION",
+          "class_name": "CollaborationRoom",
         },
       ],
-      "queues": {
-        "producers": [
-          {
-            "binding": "NOTIFICATION_QUEUE",
-            "queue": "kanban-notifications-preview",
-          },
-        ],
-      },
-      "durable_objects": {
-        "bindings": [
-          {
-            "name": "COLLABORATION",
-            "class_name": "CollaborationRoom",
-          },
-        ],
-      },
     },
   },
 }

@@ -1,132 +1,102 @@
 # デプロイとプレビュー
 
-Cloudflare にデプロイする手順。**ここに書いたことのうち、リソースの作成、シークレットの設定、ダッシュボードの設定は、Cloudflare のアカウントが要るので、まだ実際には試していない。** 確認できているのは、Wrangler の設定が正しく読めること (`pnpm check:deploy`、CI でも実行する) まで。
+Cloudflare (ut-code のアカウント `ut.code();`) へのデプロイとプレビュー。デプロイは GitHub の CI ではなく、Cloudflare の **Workers Builds** (ダッシュボードで設定) が行う。
 
 [#3](https://github.com/ut-code/kanban/issues/3) で扱う。
 
+## いまの状態
+
+|                                                | 状態                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 本番の Web (`kanban-web`)                      | デプロイ済み: https://kanban-web.ut-code.workers.dev                                                                              |
+| メールを送る Worker (`kanban-reminder-worker`) | デプロイ済み (cron は 15 分ごと)。公開 URL はない (`workers_dev: false`)                                                          |
+| プレビュー                                     | Worker Previews。ブランチごとに `https://<ブランチ名>-kanban-web.ut-code.workers.dev`                                             |
+| リソース                                       | D1 2 個、R2 2 個、キュー 4 つ (下の表)。マイグレーションは本番とプレビューの両方に適用済み                                        |
+| シークレット                                   | `BETTER_AUTH_SECRET` を、本番とプレビュー (全プレビュー共通) に設定済み (別の値)                                                  |
+| Workers Builds                                 | ダッシュボードで設定済み (下の 4 の値)                                                                                            |
+| メール (Resend)                                | **未設定** ([#8](https://github.com/ut-code/kanban/issues/8))。それまで、本番のメールの送信は失敗して、デッドレターキューに溜まる |
+| Google ログイン                                | **未設定** ([#2](https://github.com/ut-code/kanban/issues/2))                                                                     |
+
 ## 名前
 
-Cloudflare のリソースの名前は、**Cloudflare のアカウントの中で一意**になる (GitHub の org ではない)。共有のアカウントで他のプロジェクトとぶつからないよう、すべての名前に `kanban-` を付けている。名前を変えるときは、`wrangler.jsonc` (2 つ)、`apps/reminder-worker/src/index.ts` (通知のキューの名前)、`package.json` と `justfile` と `e2e/start-server.sh` (D1 の名前)、この docs をそろえて直す。
+Cloudflare のリソースの名前は、**Cloudflare のアカウントの中で一意**になる (GitHub の org ではない)。共有のアカウントで他のプロジェクトとぶつからないよう、すべて `kanban-` で始める。
+
+| 種類   | 本番                                                                  | プレビュー (全プレビューで共有)                   |
+| ------ | --------------------------------------------------------------------- | ------------------------------------------------- |
+| Worker | `kanban-web`、`kanban-reminder-worker`                                | (`kanban-web` の Worker Previews)                 |
+| D1     | `kanban-db`                                                           | `kanban-db-preview`                               |
+| R2     | `kanban-files`                                                        | `kanban-files-preview`                            |
+| キュー | `kanban-reminders`、`kanban-notifications`、`kanban-mail-dead-letter` | `kanban-notifications-preview` (取り出す側はない) |
+
+名前を変えるときは、`wrangler.jsonc` (2 つ)、`apps/web/wrangler.preview-migrations.jsonc`、`apps/reminder-worker/src/index.ts` (通知のキューの名前)、`package.json`、`justfile`、`e2e/start-server.sh`、`scripts/deploy-preview.sh` と `apps/web/src/lib/preview-name.ts` (Worker の名前)、この docs をそろえて直す。
 
 ## アカウントの指定
 
 Wrangler が複数のアカウントにログインしているときは、どれを使うかを環境変数で指定する (指定しないと、対話できない場所ではエラーになる)。
 
 ```sh
-export CLOUDFLARE_ACCOUNT_ID=<アカウント ID>     # `wrangler whoami` で分かる
+export CLOUDFLARE_ACCOUNT_ID=df6c3acd32f66bd1eb95e50607684297   # ut.code();
 ```
 
-## 構成
+## 1. 本番 (`main`)
 
-| Worker                   | 設定                                       | 役割                                                                |
-| ------------------------ | ------------------------------------------ | ------------------------------------------------------------------- |
-| `kanban-web`             | `apps/web/wrangler.jsonc`                  | 画面、API                                                           |
-| `kanban-reminder-worker` | `apps/reminder-worker/wrangler.jsonc`      | リマインドと共有の通知のメール (cron、Queues)                       |
-| `kanban-web-preview`     | `apps/web/wrangler.jsonc` の `env.preview` | ブランチや PR の動作確認用。本番とは別の DB、バケット、キューを使う |
+- `main` に入ると、Workers Builds が、本番の D1 にマイグレーションを適用してから、`kanban-web` をデプロイする。
+- **merge しただけでは、マイグレーションは走らない。** Workers Builds のデプロイコマンドが `d1 migrations apply` を実行して、初めて適用される。手元からは `pnpm db:migrate:remote`。
+- マイグレーションはデプロイより先に走る。列の追加はそのままでよいが、列の削除や名前の変更は、古いコードが壊れるので、2 回に分けて出す。
+- `kanban-reminder-worker` は、別の Workers Builds のプロジェクトとしてデプロイする。
 
-プレビューにはリマインド用のワーカーを置かない。cron が動いて、本番と同じようにメールを送ってしまうのを避けるため。
+## 2. プレビュー (`main` 以外のブランチ)
 
-## いまの状態 (ut-code のアカウント `ut.code();`)
+[Worker Previews](https://developers.cloudflare.com/workers/previews/) を使う。**同じ Worker (`kanban-web`) のまま**、ブランチごとに独立したプレビューができる。
 
-|                               | 状態                                                                                                                                                                          |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| リソース                      | D1 2 個、R2 2 個、キュー 4 つ。作成済み                                                                                                                                       |
-| マイグレーション              | 本番とプレビューの両方に、すべて適用済み                                                                                                                                      |
-| `kanban-web` (本番)           | デプロイ済み: https://kanban-web.ut-code.workers.dev                                                                                                                          |
-| `kanban-web-preview`          | デプロイ済み: https://kanban-web-preview.ut-code.workers.dev (別の DB)                                                                                                        |
-| `kanban-reminder-worker`      | デプロイ済み (cron は 15 分ごと)。公開 URL はない (`workers_dev: false`)                                                                                                      |
-| シークレット                  | `BETTER_AUTH_SECRET` は、本番とプレビューに設定済み (別の値)                                                                                                                  |
-| デプロイ後の確認              | プレビューで、アカウント作成、タスク、状態の変更、添付 (R2)、共有 (キュー)、WebSocket と Durable Objects を確認済み。本番には、データを作らないよう、アカウントは作っていない |
-| Workers Builds (自動デプロイ) | **未設定**。下の 5 を、ダッシュボードで設定する                                                                                                                               |
-| メール (Resend)               | **未設定** ([#8](https://github.com/ut-code/kanban/issues/8))。それまで、メールの送信は失敗して、デッドレターキューに溜まる                                                   |
-| Google ログイン               | **未設定** ([#2](https://github.com/ut-code/kanban/issues/2))                                                                                                                 |
+- URL はブランチごとに固定: `https://<プレビュー名>-kanban-web.ut-code.workers.dev`。プレビュー名は、ブランチ名を小文字、数字、`-` にしたもの (`apps/web/src/lib/preview-name.ts`。例: `feat/worker-previews` → `feat-worker-previews`)。同じブランチにプッシュすると、そのプレビューが更新される。複数のブランチを同時に見られる。
+- **Durable Objects** は、プレビューごとに別の名前空間が自動で作られる。
+- **D1、R2、キュー**は、何も指定しないと本番と共有されてしまうので、`wrangler.jsonc` の `previews` ブロックで、プレビュー用のものを指定している。**D1 と R2 は全プレビューで 1 つを共有する** (データも共有)。列の削除や名前の変更を含むブランチを出すと、他のブランチのプレビューが壊れることがある。壊れたら、プレビュー用の DB を作り直す。
+- **ログイン:** ログインは `BETTER_AUTH_URL` と同じオリジンからのリクエストしか受け付けない。プレビューごとに URL が違うので、`scripts/deploy-preview.sh` が、`wrangler preview --name <プレビュー名> --var BETTER_AUTH_URL:<そのプレビューの URL>` で、プレビューごとに渡している。
+- **メール:** キューを取り出す側 (コンシューマ) と cron は、プレビューでは動かない (Cloudflare の制約)。プレビューでは、メールは送られない。
+- 1 つの Worker に、プレビューは 100 個まで (無料プラン)。超えると、古いものから自動で削除される。手で消すときは `wrangler preview delete --name <プレビュー名>`。
+- Worker Previews はオープンベータ (2026 年 9 月に公開)。
 
-## 1. リソースを作る (最初の 1 回)
+手元からプレビューを作る: `pnpm deploy:preview` (いまのブランチを、そのブランチ名のプレビューにする)。
 
-Wrangler にログインする (`pnpm --filter @todo/web exec wrangler login`)。
-
-```sh
-cd apps/web
-# 本番
-pnpm exec wrangler d1 create kanban-db                  # 出てきた database_id を、下の 2 つの設定に書く
-pnpm exec wrangler r2 bucket create kanban-files
-pnpm exec wrangler queues create kanban-reminders
-pnpm exec wrangler queues create kanban-notifications
-pnpm exec wrangler queues create kanban-mail-dead-letter   # 再試行しても送れなかったメールの置き場
-
-# プレビュー
-pnpm exec wrangler d1 create kanban-db-preview          # database_id を apps/web/wrangler.jsonc の env.preview に書く
-pnpm exec wrangler r2 bucket create kanban-files-preview
-pnpm exec wrangler queues create kanban-notifications-preview
-```
-
-`database_id` を書く場所 (ut-code のアカウントに作成済みで、書き込み済み):
-
-- `apps/web/wrangler.jsonc` の `d1_databases` (本番) と `env.preview.d1_databases` (プレビュー)
-- `apps/reminder-worker/wrangler.jsonc` の `d1_databases` (本番。リマインドの対象を探すため、Web と同じ DB を指す)
-
-## 2. データベースを用意する
-
-```sh
-pnpm db:migrate:remote     # 本番
-pnpm db:migrate:preview    # プレビュー
-```
-
-マイグレーションを足したら、デプロイの前に適用する (下の Workers Builds では、デプロイのコマンドに含める)。
+**参考: バージョン URL は使えない。** Cloudflare には、`wrangler versions upload` で作る「バージョン URL」(`<ハッシュ>-kanban-web…`) という別の仕組みもあるが、Durable Objects を持つ Worker では作られない (実際に試して、開けないことを確認した)。
 
 ## 3. 設定値とシークレット
 
-シークレットは `wrangler secret put` で入れる (リポジトリには書かない)。プレビューには `--env preview` を付ける。
-
-| 名前                                        | どこに                           | 内容                                                                                                                                                                           |
-| ------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `BETTER_AUTH_SECRET`                        | web (本番、プレビュー)           | 長いランダム文字列 (`openssl rand -hex 32`)。本番とプレビューで別の値にする                                                                                                    |
-| `BETTER_AUTH_URL`                           | web (`wrangler.jsonc` の `vars`) | そのアプリの公開 URL。ログインのオリジン確認に使うので、実際の URL と一致させる。本番は `https://kanban-web.ut-code.workers.dev`、プレビューは `env.preview.vars` に書いてある |
-| `RESEND_API_KEY`                            | reminder-worker                  | Resend の API キー。詳しくは [ワーカー仕様](worker.md)                                                                                                                         |
-| `REMINDER_FROM`                             | reminder-worker (`vars`)         | 送信元アドレス。独自ドメインの検証が要る                                                                                                                                       |
-| `APP_URL`                                   | reminder-worker (`vars`)         | メールのリンクの先。本番の公開 URL (`https://kanban-web.ut-code.workers.dev`)                                                                                                  |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | web                              | Google でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2))                                                                                                   |
+| 名前                                        | どこに                                                                                | 内容                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`                        | web のシークレット (本番)、プレビューの base config のシークレット (全プレビュー共通) | 長いランダム文字列。本番とプレビューで別の値                                 |
+| `BETTER_AUTH_URL`                           | web の `vars` (本番)。プレビューは `scripts/deploy-preview.sh` が渡す                 | 公開 URL。ログインのオリジン確認に使う                                       |
+| `RESEND_API_KEY`                            | reminder-worker のシークレット                                                        | Resend の API キー ([ワーカー仕様](worker.md))                               |
+| `REMINDER_FROM`                             | reminder-worker の `vars`                                                             | 送信元アドレス。独自ドメインの検証が要る                                     |
+| `APP_URL`                                   | reminder-worker の `vars`                                                             | メールのリンクの先 (本番の公開 URL)                                          |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | web                                                                                   | Google でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2)) |
 
 ```sh
 cd apps/web
-pnpm exec wrangler secret put BETTER_AUTH_SECRET
-pnpm exec wrangler secret put BETTER_AUTH_SECRET --env preview
+pnpm exec wrangler secret put BETTER_AUTH_SECRET                          # 本番
+pnpm exec wrangler preview base-config secret put BETTER_AUTH_SECRET      # 全プレビュー共通
 ```
 
-`BETTER_AUTH_URL` と `APP_URL` は、公開してよい値なので、シークレットではなく `wrangler.jsonc` の `vars` に書いてある。ローカルの `pnpm dev` は、`apps/web/.dev.vars` の値を使う。
+シークレットを入れた直後は、反映まで数十秒かかる。そのあいだ、ログインしているのに 401 になるなど、結果が一定しないことがある。少し待ってから試す。
 
-シークレットを入れた直後は、反映まで数十秒かかる。そのあいだ、古いバージョンが応答して、ログインしているのに 401 になるなど、結果が一定しないことがある。少し待ってから試す。
+## 4. Workers Builds の設定値 (ダッシュボード)
 
-**プレビューの URL の注意:** ログインは、`BETTER_AUTH_URL` と同じオリジンからのリクエストしか受け付けない。プレビューでログインを試すには、`https://kanban-web-preview.<アカウントのサブドメイン>.workers.dev` のように、**固定の URL** を `BETTER_AUTH_URL` に設定して、その URL で開く。ブランチごとに変わるバージョンの URL (`<ハッシュ>-kanban-web-preview…`) では、ログインできない。
+**`kanban-web`:**
 
-## 4. 初回のデプロイ
+| 設定                          | 値                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Root directory                | `/`                                                                                                                            |
+| Build command                 | `pnpm install --frozen-lockfile && pnpm --filter @todo/web build`                                                              |
+| Deploy command (`main`)       | `pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db --remote && pnpm --filter @todo/web exec wrangler deploy` |
+| Production branch             | `main`                                                                                                                         |
+| Non-production branch builds  | 有効                                                                                                                           |
+| Non-production deploy command | `./scripts/deploy-preview.sh`                                                                                                  |
+| Build watch paths             | `apps/web/**`、`packages/**`、`scripts/**`、`pnpm-lock.yaml`                                                                   |
 
-```sh
-pnpm deploy:web        # 本番の Web (中身は `pnpm --filter @todo/web run deploy`。`pnpm deploy` は pnpm 自身の別のコマンドなので、`run` が要る)
-pnpm deploy:worker     # リマインド用のワーカー
-pnpm deploy:preview    # プレビューの Web (Worker を作るため、最初に 1 回)
-```
+`scripts/deploy-preview.sh` は、ビルドの環境変数 `WORKERS_CI_BRANCH` からブランチ名を読む。プレビュー用の D1 にマイグレーションを適用してから、`wrangler preview` でプレビューを作る。
 
-## 5. Cloudflare 側で、自動のデプロイとプレビューを設定する (Workers Builds)
-
-ダッシュボードの Workers & Pages で、Worker ごとに、リポジトリ (`ut-code/kanban`) を接続する。Worker の名前は、設定ファイルの `name` と同じにする。
-
-**`kanban-web`** (本番とプレビューを兼ねる):
-
-| 設定                          | 値                                                                                                                                                                          |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Root directory                | `/`                                                                                                                                                                         |
-| Build command                 | `pnpm install --frozen-lockfile && pnpm --filter @todo/web build`                                                                                                           |
-| Deploy command (`main`)       | `pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db --remote && pnpm --filter @todo/web exec wrangler deploy`                                              |
-| Production branch             | `main`                                                                                                                                                                      |
-| Non-production branch builds  | 有効                                                                                                                                                                        |
-| Non-production deploy command | `pnpm --filter @todo/web exec wrangler d1 migrations apply kanban-db-preview --remote --env preview && pnpm --filter @todo/web exec wrangler versions upload --env preview` |
-| Build watch paths             | `apps/web/**`、`packages/**`、`pnpm-lock.yaml`                                                                                                                              |
-
-- `main` に入ると、本番の DB にマイグレーションを適用してから、デプロイする。
-- `main` 以外のブランチや PR は、プレビュー用の DB にマイグレーションを適用して、`kanban-web-preview` の新しいバージョンとして、本番に出さずにアップロードする。ダッシュボードや PR のコメントに、そのバージョンの URL が出る (上の注意のとおり、ログインには固定の URL を使う)。
-
-**`kanban-reminder-worker`** (本番だけ。プレビューなし):
+**`kanban-reminder-worker`** (本番だけ):
 
 | 設定                  | 値                                                         |
 | --------------------- | ---------------------------------------------------------- |
@@ -136,15 +106,30 @@ pnpm deploy:preview    # プレビューの Web (Worker を作るため、最初
 | Non-production builds | 無効                                                       |
 | Build watch paths     | `apps/reminder-worker/**`、`packages/**`、`pnpm-lock.yaml` |
 
+## 5. 最初から作り直すとき (参考)
+
+```sh
+cd apps/web
+pnpm exec wrangler d1 create kanban-db
+pnpm exec wrangler d1 create kanban-db-preview
+pnpm exec wrangler r2 bucket create kanban-files
+pnpm exec wrangler r2 bucket create kanban-files-preview
+pnpm exec wrangler queues create kanban-reminders
+pnpm exec wrangler queues create kanban-notifications
+pnpm exec wrangler queues create kanban-mail-dead-letter
+pnpm exec wrangler queues create kanban-notifications-preview
+```
+
+できた `database_id` を、`apps/web/wrangler.jsonc` (本番と `previews`)、`apps/web/wrangler.preview-migrations.jsonc`、`apps/reminder-worker/wrangler.jsonc` に書く。そのあと `pnpm db:migrate:remote`、`pnpm db:migrate:preview`、シークレット (3)、`pnpm deploy:web`、`pnpm deploy:worker`。
+
 ## 6. 確認すること
 
 - [ ] `main` へのマージで、本番にデプロイされ、マイグレーションが適用される
-- [ ] PR のブランチで、プレビューのバージョンができ、本番のデータに触れない
-- [ ] 本番で、ログイン、タスクの追加、添付、共有、リアルタイムの反映が動く (WebSocket と Durable Objects は、本番の設定で初めて確かめる)
+- [ ] PR のブランチで、`<ブランチ名>-kanban-web.ut-code.workers.dev` にプレビューができ、ログインでき、本番のデータに触れない
 - [ ] リマインドの cron が動く (ダッシュボードの Triggers で、実行の履歴を見る)
 - [ ] メールが届く ([ワーカー仕様](worker.md) の「未了」)
 - [ ] デッドレターキュー (`kanban-mail-dead-letter`) に、送れなかったメールが溜まっていない
 
 ## 設定を変えたとき
 
-`pnpm check:deploy` で、`apps/web` (本番とプレビュー) と `apps/reminder-worker` の設定が、まだ正しく読めることを確かめる (アップロードはしない)。CI の `check` ジョブでも実行する。
+`pnpm check:deploy` で、`apps/web` と `apps/reminder-worker` の設定が、まだ正しく読めることを確かめる (アップロードはしない)。CI の `check` ジョブでも実行する。
