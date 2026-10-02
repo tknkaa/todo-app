@@ -29,10 +29,15 @@ export function getAuth(env: AuthEnv) {
     emailAndPassword: { enabled: true },
     socialProviders: socialProviders(env),
     account: {
-      // Signing in with GitHub for an address that already has a password account joins the two,
-      // but only because GitHub reports whether the address is verified, and better-auth links
-      // them only when it is.
-      accountLinking: { enabled: true, trustedProviders: ['github'] },
+      // Signing in with GitHub joins an existing account of the same address only when that
+      // account's own address is verified. Password sign-ups here are not verified, so GitHub is
+      // refused for those addresses: otherwise someone could register another person's address
+      // first, and take over the account once that person signs in with GitHub.
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ['github'],
+        requireLocalEmailVerified: true,
+      },
     },
     databaseHooks: {
       user: {

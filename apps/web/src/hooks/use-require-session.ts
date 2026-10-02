@@ -8,7 +8,7 @@ export function useRequireSession() {
   const { data: session, isPending } = authClient.useSession()
 
   useEffect(() => {
-    if (!isPending && !session) void navigate({ to: '/login' })
+    if (!isPending && !session) void navigate({ to: '/login', search: { error: undefined } })
   }, [isPending, session, navigate])
 
   return session

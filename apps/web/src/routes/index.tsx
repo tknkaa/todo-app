@@ -29,7 +29,7 @@ function Home() {
       email={session.user.email}
       onSignOut={async () => {
         await authClient.signOut()
-        await navigate({ to: '/login' })
+        await navigate({ to: '/login', search: { error: undefined } })
       }}
     />
   )

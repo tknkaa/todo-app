@@ -3,13 +3,19 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { authClient } from '@/lib/auth-client'
+import { oauthErrorMessage } from '@/lib/oauth-error'
 
 export const Route = createFileRoute('/login')({
+  // better-auth sends a failed sign-in with GitHub back here as `/login?error=<code>`.
+  validateSearch: (search: Record<string, unknown>) => ({
+    error: typeof search.error === 'string' ? search.error : undefined,
+  }),
   component: Login,
 })
 
 function Login() {
   const navigate = useNavigate()
+  const { error: oauthError } = Route.useSearch()
   const { data: session } = authClient.useSession()
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn')
   const [pending, setPending] = useState(false)
@@ -86,9 +92,9 @@ function Login() {
           minLength={8}
           required
         />
-        {error && (
+        {(error || oauthError) && (
           <p className="text-sm text-destructive" role="alert">
-            {error}
+            {error || (oauthError ? oauthErrorMessage(oauthError) : '')}
           </p>
         )}
         <Button className="h-11" type="submit" disabled={pending}>
@@ -100,7 +106,13 @@ function Login() {
           className="mt-3 h-11 w-full"
           variant="outline"
           type="button"
-          onClick={() => void authClient.signIn.social({ provider: 'github', callbackURL: '/' })}
+          onClick={() =>
+            void authClient.signIn.social({
+              provider: 'github',
+              callbackURL: '/',
+              errorCallbackURL: '/login',
+            })
+          }
         >
           GitHub でログイン
         </Button>
