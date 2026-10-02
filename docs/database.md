@@ -88,6 +88,23 @@ Cloudflare D1 (SQLite)。スキーマは `packages/db/src/schema.ts` (Drizzle)�
 
 インデックス: `tasks_due_at_idx` (`due_at`, `completed_at`, `reminder_queued_at`)。リマインドの検索用。
 
+## attachments
+
+タスクの添付ファイルのメタデータ。ファイルの中身は R2 にある。
+
+| 列             | 型      | 制約                                         | 内容           |
+| -------------- | ------- | -------------------------------------------- | -------------- |
+| `id`           | TEXT    | PK                                           | UUID           |
+| `task_id`      | TEXT    | NOT NULL、FK → `tasks.id` (削除時に連鎖削除) |                |
+| `user_id`      | TEXT    | NOT NULL、FK → `users.id`                    | 所有者         |
+| `filename`     | TEXT    | NOT NULL                                     | 元のファイル名 |
+| `content_type` | TEXT    | NOT NULL                                     |                |
+| `size`         | INTEGER | NOT NULL                                     | バイト数       |
+| `r2_key`       | TEXT    | NOT NULL                                     | R2 のキー      |
+| `created_at`   | TEXT    | NOT NULL                                     |                |
+
+インデックス: `attachments_task_id_idx` (`task_id`)
+
 ## マイグレーション
 
 - スキーマを変えたら `pnpm db:generate` で SQL を生成する。

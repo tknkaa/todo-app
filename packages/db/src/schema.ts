@@ -103,3 +103,24 @@ export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type TaskRecord = typeof tasks.$inferSelect
 export type NewTask = typeof tasks.$inferInsert
+
+export const attachments = sqliteTable(
+  'attachments',
+  {
+    id: text('id').primaryKey().notNull(),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    filename: text('filename').notNull(),
+    contentType: text('content_type').notNull(),
+    size: integer('size').notNull(),
+    r2Key: text('r2_key').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index('attachments_task_id_idx').on(table.taskId)],
+)

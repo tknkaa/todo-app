@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Task } from '@todo/db'
+import { TaskAttachments } from '@/components/task-attachments'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -205,37 +206,37 @@ function TaskBoard({ email, onSignOut }: { email: string; onSignOut: () => Promi
         ) : (
           <ul className="grid gap-2">
             {tasks.map((task) => (
-              <li
-                className="flex min-h-[68px] items-center gap-3.5 rounded-xl border bg-card px-4 py-3.5"
-                key={task.id}
-              >
-                <Checkbox
-                  aria-label={`${task.title}を${task.completedAt ? '未完了に戻す' : '完了にする'}`}
-                  checked={Boolean(task.completedAt)}
-                  onCheckedChange={() => void toggleTask(task)}
-                />
-                <div className="grid min-w-0 flex-1 gap-1">
-                  <span
-                    className={`break-words text-sm font-medium${task.completedAt ? ' text-muted-foreground line-through' : ''}`}
+              <li className="grid gap-1 rounded-xl border bg-card px-4 py-3.5" key={task.id}>
+                <div className="flex min-h-[40px] items-center gap-3.5">
+                  <Checkbox
+                    aria-label={`${task.title}を${task.completedAt ? '未完了に戻す' : '完了にする'}`}
+                    checked={Boolean(task.completedAt)}
+                    onCheckedChange={() => void toggleTask(task)}
+                  />
+                  <div className="grid min-w-0 flex-1 gap-1">
+                    <span
+                      className={`break-words text-sm font-medium${task.completedAt ? ' text-muted-foreground line-through' : ''}`}
+                    >
+                      {task.title}
+                    </span>
+                    {task.dueAt && (
+                      <time className="text-[11px] text-muted-foreground" dateTime={task.dueAt}>
+                        {formatDueDate(task.dueAt)}
+                      </time>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    type="button"
+                    onClick={() => void removeTask(task.id)}
+                    aria-label={`${task.title}を削除`}
                   >
-                    {task.title}
-                  </span>
-                  {task.dueAt && (
-                    <time className="text-[11px] text-muted-foreground" dateTime={task.dueAt}>
-                      {formatDueDate(task.dueAt)}
-                    </time>
-                  )}
+                    削除
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-destructive"
-                  type="button"
-                  onClick={() => void removeTask(task.id)}
-                  aria-label={`${task.title}を削除`}
-                >
-                  削除
-                </Button>
+                <TaskAttachments taskId={task.id} title={task.title} />
               </li>
             ))}
           </ul>

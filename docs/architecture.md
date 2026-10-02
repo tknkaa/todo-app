@@ -14,7 +14,7 @@ Cloudflare 上で動く Web アプリ (TanStack Start) と、リマインド用�
 | Cron Triggers                    | リマインド Worker を 15 分ごとに起動                    | 実装済み                                                                                           |
 | Queues                           | リマインドメールの送信キュー                            | 実装済み                                                                                           |
 | Resend                           | リマインドメールの送信                                  | コードあり。API キーとドメインの設定は未了                                                         |
-| R2                               | タスクのファイル添付                                    | 予定。binding のみ (`FILES`)                                                                       |
+| R2                               | タスクのファイル添付                                    | 実装済み (`FILES`) → [Web アプリ仕様](web-app.md)                                                  |
 | Durable Objects                  | タスクの同時編集                                        | 予定。空のクラスと binding のみ (`COLLABORATION`)                                                  |
 
 ## リポジトリ構成
