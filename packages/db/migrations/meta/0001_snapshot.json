@@ -61,11 +61,7 @@
       "indexes": {
         "tasks_due_at_idx": {
           "name": "tasks_due_at_idx",
-          "columns": [
-            "due_at",
-            "completed_at",
-            "reminder_queued_at"
-          ],
+          "columns": ["due_at", "completed_at", "reminder_queued_at"],
           "isUnique": false
         }
       },
@@ -74,12 +70,8 @@
           "name": "tasks_user_id_users_id_fk",
           "tableFrom": "tasks",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -117,9 +109,7 @@
       "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },

@@ -10,7 +10,9 @@ export const Route = createRootRoute({
   }),
   component: () => (
     <html lang="ja">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body>
         <Outlet />
         <Scripts />

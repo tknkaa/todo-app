@@ -6,34 +6,34 @@
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "dist/client",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "todo-db",
       "database_id": "replace-with-production-database-id",
-      "migrations_dir": "../../packages/db/migrations"
-    }
+      "migrations_dir": "../../packages/db/migrations",
+    },
   ],
   "r2_buckets": [
     {
       "binding": "FILES",
-      "bucket_name": "todo-files"
-    }
+      "bucket_name": "todo-files",
+    },
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "COLLABORATION",
-        "class_name": "CollaborationRoom"
-      }
-    ]
+        "class_name": "CollaborationRoom",
+      },
+    ],
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["CollaborationRoom"]
-    }
-  ]
+      "new_sqlite_classes": ["CollaborationRoom"],
+    },
+  ],
 }

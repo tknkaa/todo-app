@@ -4,7 +4,7 @@ export class CollaborationRoom {
     private readonly _env: unknown,
   ) {}
 
-  async fetch(request: Request) {
+  async fetch(_request: Request) {
     const pair = new WebSocketPair()
     this.state.acceptWebSocket(pair[1])
     return new Response(null, { status: 101, webSocket: pair[0] })

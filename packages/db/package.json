@@ -1,17 +1,27 @@
 {
   "name": "@todo/db",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "db:generate": "drizzle-kit generate --config drizzle.config.ts"
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "test": "vitest run"
   },
-  "dependencies": { "@todo/domain": "workspace:*", "drizzle-orm": "catalog:" },
+  "dependencies": {
+    "@todo/application": "workspace:*",
+    "@todo/domain": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
