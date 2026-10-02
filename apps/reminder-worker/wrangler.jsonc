@@ -2,10 +2,12 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "kanban-reminder-worker",
   "main": "src/index.ts",
+  // It only reacts to cron and queues, and has nothing to answer on the web.
+  "workers_dev": false,
   "compatibility_date": "2026-01-01",
   "vars": {
     // Where the links in mails point to, and who they come from. Set RESEND_API_KEY as a secret.
-    "APP_URL": "http://localhost:8787",
+    "APP_URL": "https://kanban-web.ut-code.workers.dev",
     "REMINDER_FROM": "onboarding@resend.dev",
   },
   "triggers": {

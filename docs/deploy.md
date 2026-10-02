@@ -26,6 +26,21 @@ export CLOUDFLARE_ACCOUNT_ID=<アカウント ID>     # `wrangler whoami` で分
 
 プレビューにはリマインド用のワーカーを置かない。cron が動いて、本番と同じようにメールを送ってしまうのを避けるため。
 
+## いまの状態 (ut-code のアカウント `ut.code();`)
+
+|                               | 状態                                                                                                                                                                          |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| リソース                      | D1 2 個、R2 2 個、キュー 4 つ。作成済み                                                                                                                                       |
+| マイグレーション              | 本番とプレビューの両方に、すべて適用済み                                                                                                                                      |
+| `kanban-web` (本番)           | デプロイ済み: https://kanban-web.ut-code.workers.dev                                                                                                                          |
+| `kanban-web-preview`          | デプロイ済み: https://kanban-web-preview.ut-code.workers.dev (別の DB)                                                                                                        |
+| `kanban-reminder-worker`      | デプロイ済み (cron は 15 分ごと)。公開 URL はない (`workers_dev: false`)                                                                                                      |
+| シークレット                  | `BETTER_AUTH_SECRET` は、本番とプレビューに設定済み (別の値)                                                                                                                  |
+| デプロイ後の確認              | プレビューで、アカウント作成、タスク、状態の変更、添付 (R2)、共有 (キュー)、WebSocket と Durable Objects を確認済み。本番には、データを作らないよう、アカウントは作っていない |
+| Workers Builds (自動デプロイ) | **未設定**。下の 5 を、ダッシュボードで設定する                                                                                                                               |
+| メール (Resend)               | **未設定** ([#8](https://github.com/ut-code/kanban/issues/8))。それまで、メールの送信は失敗して、デッドレターキューに溜まる                                                   |
+| Google ログイン               | **未設定** ([#2](https://github.com/ut-code/kanban/issues/2))                                                                                                                 |
+
 ## 1. リソースを作る (最初の 1 回)
 
 Wrangler にログインする (`pnpm --filter @todo/web exec wrangler login`)。
@@ -63,14 +78,14 @@ pnpm db:migrate:preview    # プレビュー
 
 シークレットは `wrangler secret put` で入れる (リポジトリには書かない)。プレビューには `--env preview` を付ける。
 
-| 名前                                        | どこに                   | 内容                                                                                                            |
-| ------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET`                        | web (本番、プレビュー)   | 長いランダム文字列 (`openssl rand -hex 32`)。本番とプレビューで別の値にする                                     |
-| `BETTER_AUTH_URL`                           | web (本番、プレビュー)   | そのアプリの公開 URL (例 `https://todo.example.com`)。ログインのオリジン確認に使うので、実際の URL と一致させる |
-| `RESEND_API_KEY`                            | reminder-worker          | Resend の API キー。詳しくは [ワーカー仕様](worker.md)                                                          |
-| `REMINDER_FROM`                             | reminder-worker (`vars`) | 送信元アドレス。独自ドメインの検証が要る                                                                        |
-| `APP_URL`                                   | reminder-worker (`vars`) | メールのリンクの先 (本番の公開 URL)                                                                             |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | web                      | Google でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2))                                    |
+| 名前                                        | どこに                           | 内容                                                                                                                                                                           |
+| ------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `BETTER_AUTH_SECRET`                        | web (本番、プレビュー)           | 長いランダム文字列 (`openssl rand -hex 32`)。本番とプレビューで別の値にする                                                                                                    |
+| `BETTER_AUTH_URL`                           | web (`wrangler.jsonc` の `vars`) | そのアプリの公開 URL。ログインのオリジン確認に使うので、実際の URL と一致させる。本番は `https://kanban-web.ut-code.workers.dev`、プレビューは `env.preview.vars` に書いてある |
+| `RESEND_API_KEY`                            | reminder-worker                  | Resend の API キー。詳しくは [ワーカー仕様](worker.md)                                                                                                                         |
+| `REMINDER_FROM`                             | reminder-worker (`vars`)         | 送信元アドレス。独自ドメインの検証が要る                                                                                                                                       |
+| `APP_URL`                                   | reminder-worker (`vars`)         | メールのリンクの先。本番の公開 URL (`https://kanban-web.ut-code.workers.dev`)                                                                                                  |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | web                              | Google でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2))                                                                                                   |
 
 ```sh
 cd apps/web
@@ -78,14 +93,16 @@ pnpm exec wrangler secret put BETTER_AUTH_SECRET
 pnpm exec wrangler secret put BETTER_AUTH_SECRET --env preview
 ```
 
-`BETTER_AUTH_URL` は、`wrangler.jsonc` の `vars` に書くか、ダッシュボードの Variables で設定する。
+`BETTER_AUTH_URL` と `APP_URL` は、公開してよい値なので、シークレットではなく `wrangler.jsonc` の `vars` に書いてある。ローカルの `pnpm dev` は、`apps/web/.dev.vars` の値を使う。
+
+シークレットを入れた直後は、反映まで数十秒かかる。そのあいだ、古いバージョンが応答して、ログインしているのに 401 になるなど、結果が一定しないことがある。少し待ってから試す。
 
 **プレビューの URL の注意:** ログインは、`BETTER_AUTH_URL` と同じオリジンからのリクエストしか受け付けない。プレビューでログインを試すには、`https://kanban-web-preview.<アカウントのサブドメイン>.workers.dev` のように、**固定の URL** を `BETTER_AUTH_URL` に設定して、その URL で開く。ブランチごとに変わるバージョンの URL (`<ハッシュ>-kanban-web-preview…`) では、ログインできない。
 
 ## 4. 初回のデプロイ
 
 ```sh
-pnpm deploy:web        # 本番の Web
+pnpm deploy:web        # 本番の Web (中身は `pnpm --filter @todo/web run deploy`。`pnpm deploy` は pnpm 自身の別のコマンドなので、`run` が要る)
 pnpm deploy:worker     # リマインド用のワーカー
 pnpm deploy:preview    # プレビューの Web (Worker を作るため、最初に 1 回)
 ```
