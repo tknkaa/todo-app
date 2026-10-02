@@ -1,19 +1,21 @@
-# アーキテクチャ
+# 全体アーキテクチャ
 
 ![構成図](architecture.png)
 
-Cloudflare 上で動く TanStack Start のアプリと、リマインド用の Worker の 2 つで構成する。
+Cloudflare 上で動く Web アプリ (TanStack Start) と、リマインド用のワーカーの 2 つの Worker で構成する。
 
-| コンポーネント                   | 役割                                                             | 状態                                                                   |
-| -------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Workers (`apps/web`)             | 画面 (TanStack Start)、タスク API、認証                          | 実装済み                                                               |
-| D1                               | ユーザー、セッション、タスクの保存                               | 実装済み                                                               |
-| Workers (`apps/reminder-worker`) | Cron Triggers で起動し、リマインドを Queues に積み、メールを送る | 実装済み。送信設定は [#8](https://github.com/tknkaa/todo-app/issues/8) |
-| Cron Triggers                    | リマインド Worker を 15 分ごとに起動                             | 実装済み                                                               |
-| Queues                           | リマインドメールの送信キュー                                     | 実装済み                                                               |
-| Resend                           | リマインドメールの送信                                           | コードあり。API キーとドメイン設定は未了                               |
-| R2                               | タスクのファイル添付                                             | 予定。binding のみ (`FILES`)                                           |
-| Durable Objects                  | タスクの同時編集                                                 | 予定。空のクラスと binding のみ (`COLLABORATION`)                      |
+## コンポーネント
+
+| コンポーネント                   | 役割                                                    | 状態                                                                                               |
+| -------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Workers (`apps/web`)             | 画面、タスク API、認証                                  | 実装済み → [Web アプリ仕様](web-app.md)                                                            |
+| Workers (`apps/reminder-worker`) | cron で起動し、リマインドを Queues に積み、メールを送る | 実装済み。送信設定は [#8](https://github.com/tknkaa/todo-app/issues/8) → [ワーカー仕様](worker.md) |
+| D1                               | ユーザー、セッション、タスクの保存                      | 実装済み → [テーブル定義](database.md)                                                             |
+| Cron Triggers                    | リマインド Worker を 15 分ごとに起動                    | 実装済み                                                                                           |
+| Queues                           | リマインドメールの送信キュー                            | 実装済み                                                                                           |
+| Resend                           | リマインドメールの送信                                  | コードあり。API キーとドメインの設定は未了                                                         |
+| R2                               | タスクのファイル添付                                    | 予定。binding のみ (`FILES`)                                                                       |
+| Durable Objects                  | タスクの同時編集                                        | 予定。空のクラスと binding のみ (`COLLABORATION`)                                                  |
 
 ## リポジトリ構成
 
@@ -35,3 +37,10 @@ docs/                  このドキュメント
 
 - **タスク操作:** ブラウザ → `apps/web` の `/api/tasks` → D1。リクエストごとにセッションを確認し、ログインしていなければ 401 を返す。
 - **リマインド:** Cron → `reminder-worker` が D1 から対象タスクを検索 → Queues に投入 → 同じ Worker のコンシューマが Resend でメール送信。
+
+## ドキュメント一覧
+
+- [Web アプリ仕様](web-app.md)
+- [テーブル定義](database.md)
+- [ワーカー仕様](worker.md)
+- [開発](development.md)
