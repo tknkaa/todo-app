@@ -12,9 +12,11 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "db:generate": "pnpm --filter @todo/db db:generate",
     "db:migrate:local": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --local --persist-to .wrangler/state-drizzle-baseline",
-    "db:migrate:remote": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --remote"
+    "db:migrate:remote": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --remote",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:"
   },

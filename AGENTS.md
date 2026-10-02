@@ -6,6 +6,7 @@ Todo アプリ。Cloudflare Workers 上の TanStack Start (`apps/web`) と、cro
 
 ```sh
 pnpm check                 # フォーマット、lint、型チェック、テスト。PR の前に必ず通す
+pnpm test:e2e              # 本物のブラウザでの E2E (Chrome が必要。空の DB で別のポート 8788 に起動する)
 pnpm format                # Oxfmt で整形
 pnpm test                  # Vitest (apps/web と packages/db)
 pnpm db:generate --name=<内容が分かる名前>   # マイグレーションを生成
@@ -29,7 +30,8 @@ just sql "select * from tasks"   # ローカルの D1 を見る
 
 - ハンドラとリポジトリは、インメモリ SQLite (`@todo/db/testing`) に本物のマイグレーションを適用して試す。
 - 新しい機能には、正常系に加えて、他のユーザーが触れないこと (所有者と共有された人だけが扱えること) のテストを書く。
-- 画面の操作を通したテストはまだない ([#21](https://github.com/tknkaa/todo-app/issues/21))。画面を変えたら、実際に動かして確かめる。
+- 画面を通した主な流れは、E2E テスト (`pnpm test:e2e`、Playwright) で確かめる。UI は変わっていくので、E2E は主な流れだけにし、文言や配置ではなく役割とラベルで要素を探す。細かい挙動はユニットテストに任せる。詳しくは `docs/development.md`。
+- 画面を変えたら、E2E に加えて、実際に動かして見た目も確かめる。
 
 ## データベース
 
