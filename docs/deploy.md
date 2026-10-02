@@ -110,7 +110,7 @@ pnpm exec wrangler preview base-config secret put BETTER_AUTH_SECRET      # 全�
 
 - 本番のブランチは `main` にする。最初の設定で、本番のブランチが PR のブランチになっていて、PR のプッシュが本番のビルドとして扱われていた。
 - `main` 以外のブランチは、「Previews」を有効にして、Preview command に `./scripts/deploy-preview.sh` を入れる。Previews が無効だと、古い方式の「非本番のデプロイ」になり、PR のコメントにプレビューの URL が出ない。
-- ブランチの最初のビルドのときに、そのときの設定が写される。設定は、PR を出す前に済ませる。
+- ブランチの最初のビルドのときに、そのときの設定 (コマンド、トークン) が、そのブランチのプレビュー専用のトリガーに写される。あとから Worker の設定を変えても、既存のブランチには効かない。既存のブランチも直すときは、`cf builds triggers list --external-script-id <プレビューの ID>` でトリガーを見つけて、`cf builds triggers update` で直す (プレビューの ID は `cf workers-builds workers previews list --script-tag <Worker のタグ>` で分かる)。
 
 ### 設定を確かめる (`cf`)
 
