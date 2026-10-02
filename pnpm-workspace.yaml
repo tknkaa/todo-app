@@ -4,6 +4,7 @@ packages:
 
 catalog:
   '@cloudflare/workers-types': ^4.20250926.0
+  better-auth: ^1.7.7
   '@tailwindcss/vite': ^4.3.3
   '@tanstack/react-start': ^1.120.5
   '@tanstack/react-router': ^1.120.5
@@ -16,12 +17,16 @@ catalog:
   drizzle-kit: ^0.31.11
   drizzle-orm: ^0.45.3
   lucide-react: ^0.468.0
+  oxfmt: ^0.71.0
+  oxlint: ^1.86.0
   react: ^19.1.1
   radix-ui: ^1.6.7
   react-dom: ^19.1.1
   tailwind-merge: ^3.3.1
   tailwindcss: ^4.3.3
   typescript: ^5.9.2
+  valibot: ^1.5.0
   vite: ^7.1.7
   vite-tsconfig-paths: ^5.1.4
+  vitest: ^5.0.3
   wrangler: ^4.38.0
