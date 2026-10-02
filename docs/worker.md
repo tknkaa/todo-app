@@ -58,7 +58,7 @@ cron と Queues の設定は `wrangler.jsonc` (`triggers.crons`、`queues`)。`k
 
 ## 未了
 
-メールを実際に送れる状態にするには、アカウントやドメインの作業が要る。コードの側は済んでいる。リソースの作り方とシークレットの設定は [デプロイとプレビュー](deploy.md) にある。[#8](https://github.com/tknkaa/todo-app/issues/8) で扱う。
+メールを実際に送れる状態にするには、アカウントやドメインの作業が要る。コードの側は済んでいる。リソースの作り方とシークレットの設定は [デプロイとプレビュー](deploy.md) にある。[#8](https://github.com/ut-code/kanban/issues/8) で扱う。
 
 - Resend のアカウントで API キーを作り、`RESEND_API_KEY` を設定する
 - 送信元のドメインを Resend で検証し、`REMINDER_FROM` を変える

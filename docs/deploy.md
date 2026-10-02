@@ -2,7 +2,7 @@
 
 Cloudflare にデプロイする手順。**ここに書いたことのうち、リソースの作成、シークレットの設定、ダッシュボードの設定は、Cloudflare のアカウントが要るので、まだ実際には試していない。** 確認できているのは、Wrangler の設定が正しく読めること (`pnpm check:deploy`、CI でも実行する) まで。
 
-[#3](https://github.com/tknkaa/todo-app/issues/3) で扱う。
+[#3](https://github.com/ut-code/kanban/issues/3) で扱う。
 
 ## 名前
 
@@ -70,7 +70,7 @@ pnpm db:migrate:preview    # プレビュー
 | `RESEND_API_KEY`                            | reminder-worker          | Resend の API キー。詳しくは [ワーカー仕様](worker.md)                                                          |
 | `REMINDER_FROM`                             | reminder-worker (`vars`) | 送信元アドレス。独自ドメインの検証が要る                                                                        |
 | `APP_URL`                                   | reminder-worker (`vars`) | メールのリンクの先 (本番の公開 URL)                                                                             |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | web                      | Google でログインするとき ([#2](https://github.com/tknkaa/todo-app/issues/2))                                   |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | web                      | Google でログインするとき ([#2](https://github.com/ut-code/kanban/issues/2))                                    |
 
 ```sh
 cd apps/web
@@ -92,7 +92,7 @@ pnpm deploy:preview    # プレビューの Web (Worker を作るため、最初
 
 ## 5. Cloudflare 側で、自動のデプロイとプレビューを設定する (Workers Builds)
 
-ダッシュボードの Workers & Pages で、Worker ごとに、リポジトリ (`tknkaa/todo-app`) を接続する。Worker の名前は、設定ファイルの `name` と同じにする。
+ダッシュボードの Workers & Pages で、Worker ごとに、リポジトリ (`ut-code/kanban`) を接続する。Worker の名前は、設定ファイルの `name` と同じにする。
 
 **`kanban-web`** (本番とプレビューを兼ねる):
 
