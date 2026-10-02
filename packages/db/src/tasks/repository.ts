@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, exists, or, sql, type SQL } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
-import type { Task } from '../types'
+import type { Task, TaskStatus } from '../types'
 import { taskMembers, tasks, users } from '../schema'
 
 export type TodoDatabase = D1Database
@@ -14,6 +14,7 @@ export class D1TaskRepository {
         id: tasks.id,
         userId: tasks.userId,
         title: tasks.title,
+        status: tasks.status,
         dueAt: tasks.dueAt,
         completedAt: tasks.completedAt,
         remindBeforeMinutes: tasks.remindBeforeMinutes,
@@ -34,6 +35,7 @@ export class D1TaskRepository {
         id: tasks.id,
         userId: tasks.userId,
         title: tasks.title,
+        status: tasks.status,
         dueAt: tasks.dueAt,
         completedAt: tasks.completedAt,
         remindBeforeMinutes: tasks.remindBeforeMinutes,
@@ -50,6 +52,7 @@ export class D1TaskRepository {
         id: tasks.id,
         userId: tasks.userId,
         title: tasks.title,
+        status: tasks.status,
         dueAt: tasks.dueAt,
         completedAt: tasks.completedAt,
         remindBeforeMinutes: tasks.remindBeforeMinutes,
@@ -81,10 +84,10 @@ export class D1TaskRepository {
     await this.db.insert(tasks).values(task).run()
   }
 
-  async setCompleted(userId: string, taskId: string, completedAt: string | null) {
+  async setStatus(userId: string, taskId: string, status: TaskStatus, completedAt: string | null) {
     await this.db
       .update(tasks)
-      .set({ completedAt })
+      .set({ status, completedAt })
       .where(and(eq(tasks.id, taskId), this.accessible(userId)))
       .run()
   }

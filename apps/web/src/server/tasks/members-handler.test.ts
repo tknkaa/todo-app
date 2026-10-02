@@ -37,6 +37,7 @@ describe('handleMembersRequest', () => {
       dueAt: null,
       completedAt: null,
       remindBeforeMinutes: null,
+      status: 'todo',
     })
   })
 

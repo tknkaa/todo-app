@@ -81,8 +81,9 @@ Cloudflare D1 (SQLite)。スキーマは `packages/db/src/schema.ts` (Drizzle)�
 | `id`                    | TEXT    | PK                        | UUID                                                                                              |
 | `user_id`               | TEXT    | NOT NULL、FK → `users.id` | 所有者                                                                                            |
 | `title`                 | TEXT    | NOT NULL                  | 1〜200 文字 (アプリ側で検証)                                                                      |
+| `status`                | TEXT    | NOT NULL、既定 `'todo'`   | ボードの列。`todo` / `doing` / `done`                                                             |
 | `due_at`                | TEXT    |                           | 締め切り (UTC の ISO 8601)                                                                        |
-| `completed_at`          | TEXT    |                           | 完了日時。未完了は NULL                                                                           |
+| `completed_at`          | TEXT    |                           | 完了日時。`status` が `done` のときだけ入る                                                       |
 | `remind_before_minutes` | INTEGER |                           | 締め切りの何分前にリマインドするか。NULL はリマインドなし                                         |
 | `reminder_queued_at`    | TEXT    |                           | リマインドをキューに積んだ日時。NULL なら未処理。締め切りかリマインドの設定を変えると NULL に戻る |
 | `created_at`            | TEXT    | NOT NULL                  |                                                                                                   |

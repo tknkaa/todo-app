@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { completionTimestamp, parseCreateTaskInput, parseUpdateTaskInput } from './task-input'
+import { parseCreateTaskInput, parseUpdateTaskInput } from './task-input'
 
 describe('parseCreateTaskInput', () => {
   it('trims the title and converts the deadline to UTC', () => {
@@ -41,23 +41,11 @@ describe('parseCreateTaskInput', () => {
   })
 })
 
-describe('completionTimestamp', () => {
-  const now = new Date('2026-10-02T01:02:03.000Z')
-
-  it('returns the current time when completing', () => {
-    expect(completionTimestamp(true, now)).toBe('2026-10-02T01:02:03.000Z')
-  })
-
-  it('returns null when reopening', () => {
-    expect(completionTimestamp(false, now)).toBeNull()
-  })
-})
-
 describe('parseUpdateTaskInput', () => {
   it('keeps only the fields that were given', () => {
-    expect(parseUpdateTaskInput({ completed: true })).toEqual({
+    expect(parseUpdateTaskInput({ status: 'done' })).toEqual({
       ok: true,
-      value: { completed: true },
+      value: { status: 'done' },
     })
     expect(parseUpdateTaskInput({ title: '  new  ' })).toEqual({
       ok: true,
@@ -84,7 +72,7 @@ describe('parseUpdateTaskInput', () => {
   it.each([
     [{ title: '   ' }, 'タイトルは1〜200文字で入力してください。'],
     [{ dueAt: 'nope' }, '締め切りの日時が正しくありません。'],
-    [{ completed: 'yes' }, 'completed は boolean で指定してください。'],
+    [{ status: 'finished' }, 'status は todo / doing / done のいずれかを指定してください。'],
   ])('rejects %j', (input, message) => {
     expect(parseUpdateTaskInput(input)).toEqual({ ok: false, message })
   })
