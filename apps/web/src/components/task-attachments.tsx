@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import type { Attachment } from '@todo/db'
 import { Button } from '@/components/ui/button'
+import { messageOf, responseError } from '@/lib/api'
 import { formatBytes } from '@/lib/attachment'
 
 type PublicAttachment = Omit<Attachment, 'r2Key' | 'userId'>
@@ -108,13 +109,4 @@ export function TaskAttachments({ taskId, title }: { taskId: string; title: stri
       )}
     </div>
   )
-}
-
-async function responseError(response: Response) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null
-  return body?.error ?? 'リクエストに失敗しました。'
-}
-
-function messageOf(cause: unknown, fallback: string) {
-  return cause instanceof Error ? cause.message : fallback
 }

@@ -166,9 +166,26 @@ describe('handleTasksRequest', () => {
     ])
   })
 
+  it('returns a single task to its owner and to a member, but not to others', async () => {
+    const { id } = await create({ title: 'Task', dueAt: '2030-01-01T00:00:00.000Z' })
+
+    const owner = await call('GET', `/api/tasks/${id}`)
+    expect(owner.status).toBe(200)
+    expect(await owner.json()).toMatchObject({ id, userId: 'alice', title: 'Task' })
+
+    expect((await call('GET', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(404)
+
+    await members.add(id, 'bob')
+    expect((await call('GET', `/api/tasks/${id}`, undefined, 'bob')).status).toBe(200)
+  })
+
+  it('answers 404 for a task that does not exist', async () => {
+    expect((await call('GET', '/api/tasks/missing')).status).toBe(404)
+  })
+
   it('answers unknown routes and methods', async () => {
     expect((await call('PUT', '/api/tasks')).status).toBe(405)
-    expect((await call('GET', '/api/tasks/x')).status).toBe(405)
+    expect((await call('PUT', '/api/tasks/x')).status).toBe(405)
     expect((await call('GET', '/api/other')).status).toBe(404)
   })
 

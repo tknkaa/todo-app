@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
 import type { Task, TaskStatus } from '@todo/db'
 import { ReminderFields } from '@/components/reminder-fields'
@@ -97,11 +98,15 @@ export function TaskCard({
         </form>
       ) : (
         <>
-          <span
-            className={`break-words text-sm font-medium${task.status === 'done' ? ' text-muted-foreground line-through' : ''}`}
+          <Link
+            to="/tasks/$taskId"
+            params={{ taskId: task.id }}
+            // A link would be dragged as a URL instead of the card.
+            draggable={false}
+            className={`break-words text-sm font-medium hover:underline${task.status === 'done' ? ' text-muted-foreground line-through' : ''}`}
           >
             {task.title}
-          </span>
+          </Link>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
             {task.dueAt && <time dateTime={task.dueAt}>{formatDueDate(task.dueAt)}</time>}
             {task.remindBeforeMinutes !== null && (
@@ -128,6 +133,15 @@ export function TaskCard({
                 </option>
               ))}
             </select>
+            <Link
+              to="/tasks/$taskId"
+              params={{ taskId: task.id }}
+              draggable={false}
+              className="inline-flex h-8 items-center rounded-md px-2.5 text-sm text-muted-foreground hover:bg-accent"
+              aria-label={`${task.title}を全画面で開く`}
+            >
+              開く
+            </Link>
             <Button
               variant="ghost"
               size="sm"
