@@ -6,7 +6,8 @@
     "dev": "pnpm --filter @todo/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "db:migrate:local": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --local",
+    "db:generate": "pnpm --filter @todo/db db:generate",
+    "db:migrate:local": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --local --persist-to .wrangler/state-drizzle-baseline",
     "db:migrate:remote": "pnpm --filter @todo/web exec wrangler d1 migrations apply todo-db --remote"
   }
 }

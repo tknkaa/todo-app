@@ -2,6 +2,10 @@
 
 TanStack Start on Cloudflare Workers, with D1, R2, Durable Objects, and a reminder worker.
 
+The web app uses shadcn/ui components with Tailwind CSS v4. Add or update components from `apps/web` with `pnpm dlx shadcn@latest add <component>`.
+
+Database tables are defined in `packages/db/src/schema.ts`. Generate a migration with `pnpm db:generate`; Wrangler applies the SQL files from `packages/db/migrations` to D1. Cloudflare Worker settings live in `apps/web/wrangler.jsonc` and `apps/reminder-worker/wrangler.jsonc`.
+
 ## Local development
 
 ```sh

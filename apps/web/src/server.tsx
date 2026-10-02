@@ -29,13 +29,11 @@ async function handleTasks(request: Request, env: Env): Promise<Response> {
   await ensureUser(env.DB, env.DEMO_USER_ID, env.DEMO_USER_EMAIL)
   const url = new URL(request.url)
 
-  if (url.pathname !== '/api/tasks') return json({ error: 'Not found' }, 404)
-
-  if (request.method === 'GET') {
+  if (url.pathname === '/api/tasks' && request.method === 'GET') {
     return json(await listTasks(env.DB, env.DEMO_USER_ID))
   }
 
-  if (request.method === 'POST') {
+  if (url.pathname === '/api/tasks' && request.method === 'POST') {
     let body: { title?: unknown; dueAt?: unknown }
     try {
       body = await request.json()

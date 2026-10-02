@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Task } from '@todo/domain'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -83,60 +86,65 @@ function Home() {
   }
 
   return (
-    <main className="page-shell">
-      <header className="page-header">
-        <span className="eyebrow">YOUR SPACE</span>
-        <h1>今日を、ひとつずつ。</h1>
-        <p>やることを整理して、大切な締め切りに集中しよう。</p>
+    <main className="mx-auto w-full max-w-[800px] px-5 pt-14 pb-8 md:pt-22">
+      <header className="mb-10">
+        <span className="text-[11px] font-bold tracking-[0.18em] text-muted-foreground">YOUR SPACE</span>
+        <h1 className="mt-3 mb-2 text-3xl font-semibold tracking-[-0.055em] md:text-[42px]">今日を、ひとつずつ。</h1>
+        <p className="text-sm text-muted-foreground">やることを整理して、大切な締め切りに集中しよう。</p>
       </header>
 
-      <section className="task-panel" aria-labelledby="new-task-heading">
-        <h2 id="new-task-heading">タスクを追加</h2>
-        <form className="task-form" onSubmit={addTask}>
+      <section className="rounded-2xl border bg-card p-5 shadow-sm md:p-6" aria-labelledby="new-task-heading">
+        <h2 id="new-task-heading" className="text-[15px] font-semibold">タスクを追加</h2>
+        <form className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_210px_auto]" onSubmit={addTask}>
           <label className="sr-only" htmlFor="task-title">タスク名</label>
-          <input id="task-title" name="title" placeholder="次にやることは？" maxLength={200} required />
+          <Input id="task-title" name="title" className="h-11 bg-muted/40" placeholder="次にやることは？" maxLength={200} required />
           <label className="sr-only" htmlFor="task-due">締め切り</label>
-          <input id="task-due" name="dueAt" type="datetime-local" aria-label="締め切り" />
-          <button className="primary-button" type="submit" disabled={saving}>
+          <Input id="task-due" name="dueAt" type="datetime-local" aria-label="締め切り" className="h-11 bg-muted/40" />
+          <Button className="h-11 px-5" type="submit" disabled={saving}>
             {saving ? '追加中…' : '追加する'}
-          </button>
+          </Button>
         </form>
       </section>
 
-      {error && <p className="error-message" role="alert">{error}</p>}
+      {error && <p className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive" role="alert">{error}</p>}
 
-      <section className="task-section" aria-labelledby="task-list-heading">
-        <div className="section-heading">
-          <h2 id="task-list-heading">タスク</h2>
-          <span className="task-count">{tasks.filter((task) => !task.completedAt).length} 件</span>
+      <section className="mt-10" aria-labelledby="task-list-heading">
+        <div className="mb-3.5 flex items-center gap-2.5">
+          <h2 id="task-list-heading" className="text-[15px] font-semibold">タスク</h2>
+          <span className="grid h-6 min-w-6 place-items-center rounded-full bg-secondary px-2 text-[11px] font-semibold text-secondary-foreground">
+            {tasks.filter((task) => !task.completedAt).length} 件
+          </span>
         </div>
-        {loading ? <p className="empty-state">読み込み中…</p> : tasks.length === 0 ? (
-          <p className="empty-state">タスクはまだありません。ひとつ追加して始めましょう。</p>
+        {loading ? <EmptyMessage>読み込み中…</EmptyMessage> : tasks.length === 0 ? (
+          <EmptyMessage>タスクはまだありません。ひとつ追加して始めましょう。</EmptyMessage>
         ) : (
-          <ul className="task-list">
+          <ul className="grid gap-2">
             {tasks.map((task) => (
-              <li className={`task-item${task.completedAt ? ' is-complete' : ''}`} key={task.id}>
-                <input
+              <li className="flex min-h-[68px] items-center gap-3.5 rounded-xl border bg-card px-4 py-3.5" key={task.id}>
+                <Checkbox
                   aria-label={`${task.title}を${task.completedAt ? '未完了に戻す' : '完了にする'}`}
-                  type="checkbox"
                   checked={Boolean(task.completedAt)}
-                  onChange={() => void toggleTask(task)}
+                  onCheckedChange={() => void toggleTask(task)}
                 />
-                <div className="task-copy">
-                  <span className="task-title">{task.title}</span>
-                  {task.dueAt && <time dateTime={task.dueAt}>{formatDueDate(task.dueAt)}</time>}
+                <div className="grid min-w-0 flex-1 gap-1">
+                  <span className={`break-words text-sm font-medium${task.completedAt ? ' text-muted-foreground line-through' : ''}`}>{task.title}</span>
+                  {task.dueAt && <time className="text-[11px] text-muted-foreground" dateTime={task.dueAt}>{formatDueDate(task.dueAt)}</time>}
                 </div>
-                <button className="delete-button" type="button" onClick={() => void removeTask(task.id)} aria-label={`${task.title}を削除`}>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" type="button" onClick={() => void removeTask(task.id)} aria-label={`${task.title}を削除`}>
                   削除
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
         )}
       </section>
-      <footer className="page-footer">小さな一歩も、前進です。</footer>
+      <footer className="mt-12 text-center text-[11px] tracking-[0.08em] text-muted-foreground">小さな一歩も、前進です。</footer>
     </main>
   )
+}
+
+function EmptyMessage({ children }: { children: ReactNode }) {
+  return <p className="rounded-xl border border-dashed px-5 py-7 text-center text-sm text-muted-foreground">{children}</p>
 }
 
 async function responseError(response: Response) {

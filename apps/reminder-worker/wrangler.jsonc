@@ -1,0 +1,32 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "todo-reminder-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-01-01",
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "todo-db",
+      "database_id": "replace-with-production-database-id",
+      "migrations_dir": "../../packages/db/migrations"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "REMINDER_QUEUE",
+        "queue": "todo-reminders"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "todo-reminders",
+        "max_batch_size": 10,
+        "max_retries": 3
+      }
+    ]
+  }
+}

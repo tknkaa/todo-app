@@ -4,14 +4,23 @@ packages:
 
 catalog:
   '@cloudflare/workers-types': ^4.20250926.0
+  '@tailwindcss/vite': ^4.3.3
   '@tanstack/react-start': ^1.120.5
   '@tanstack/react-router': ^1.120.5
   '@tanstack/router-devtools': ^1.120.5
   '@tanstack/router-plugin': ^1.120.5
   '@types/react': ^19.1.13
   '@types/react-dom': ^19.1.9
+  class-variance-authority: ^0.7.1
+  clsx: ^2.1.1
+  drizzle-kit: ^0.31.11
+  drizzle-orm: ^0.45.3
+  lucide-react: ^0.468.0
   react: ^19.1.1
+  radix-ui: ^1.6.7
   react-dom: ^19.1.1
+  tailwind-merge: ^3.3.1
+  tailwindcss: ^4.3.3
   typescript: ^5.9.2
   vite: ^7.1.7
   vite-tsconfig-paths: ^5.1.4

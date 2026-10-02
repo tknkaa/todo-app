@@ -1,81 +1,103 @@
+import { and, asc, desc, eq, gt, isNull, lte, sql } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/d1'
 import type { ReminderMessage, Task } from '@todo/domain'
+import { tasks, users } from './schema'
 
 export type TodoDatabase = D1Database
 
-export async function listTasks(db: TodoDatabase, userId: string): Promise<Task[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT id, user_id AS userId, title, due_at AS dueAt, completed_at AS completedAt
-       FROM tasks WHERE user_id = ? ORDER BY completed_at IS NOT NULL, due_at IS NULL, due_at, created_at DESC`,
+export async function listTasks(database: TodoDatabase, userId: string): Promise<Task[]> {
+  const db = drizzle(database, { schema: { tasks, users } })
+  return db
+    .select({
+      id: tasks.id,
+      userId: tasks.userId,
+      title: tasks.title,
+      dueAt: tasks.dueAt,
+      completedAt: tasks.completedAt,
+    })
+    .from(tasks)
+    .where(eq(tasks.userId, userId))
+    .orderBy(
+      sql`case when ${tasks.completedAt} is not null then 1 else 0 end`,
+      sql`case when ${tasks.dueAt} is null then 1 else 0 end`,
+      asc(tasks.dueAt),
+      desc(tasks.createdAt),
     )
-    .bind(userId)
-    .all<Task>()
-
-  return results
 }
 
 export async function createTask(
-  db: TodoDatabase,
+  database: TodoDatabase,
   input: { id: string; userId: string; title: string; dueAt: string | null },
 ): Promise<Task> {
-  await db
-    .prepare('INSERT INTO tasks (id, user_id, title, due_at) VALUES (?, ?, ?, ?)')
-    .bind(input.id, input.userId, input.title, input.dueAt)
-    .run()
+  const db = drizzle(database, { schema: { tasks, users } })
+  await db.insert(tasks).values(input).run()
 
-  return {
-    id: input.id,
-    userId: input.userId,
-    title: input.title,
-    dueAt: input.dueAt,
-    completedAt: null,
-  }
+  return { ...input, completedAt: null }
 }
 
 export async function setTaskCompleted(
-  db: TodoDatabase,
+  database: TodoDatabase,
   userId: string,
   taskId: string,
   completed: boolean,
 ) {
+  const db = drizzle(database, { schema: { tasks, users } })
   await db
-    .prepare('UPDATE tasks SET completed_at = ? WHERE id = ? AND user_id = ?')
-    .bind(completed ? new Date().toISOString() : null, taskId, userId)
+    .update(tasks)
+    .set({ completedAt: completed ? new Date().toISOString() : null })
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
     .run()
 }
 
-export async function deleteTask(db: TodoDatabase, userId: string, taskId: string) {
-  await db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').bind(taskId, userId).run()
+export async function deleteTask(database: TodoDatabase, userId: string, taskId: string) {
+  const db = drizzle(database, { schema: { tasks, users } })
+  await db.delete(tasks).where(and(eq(tasks.id, taskId), eq(tasks.userId, userId))).run()
 }
 
-export async function ensureUser(db: TodoDatabase, userId: string, email: string) {
+export async function ensureUser(database: TodoDatabase, userId: string, email: string) {
+  const db = drizzle(database, { schema: { tasks, users } })
   await db
-    .prepare('INSERT INTO users (id, email) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET email = excluded.email')
-    .bind(userId, email)
+    .insert(users)
+    .values({ id: userId, email })
+    .onConflictDoUpdate({ target: users.id, set: { email } })
     .run()
 }
 
 export async function findDueReminders(
-  db: TodoDatabase,
+  database: TodoDatabase,
   now: string,
   until: string,
 ): Promise<ReminderMessage[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT t.id AS taskId, t.user_id AS userId, u.email, t.title, t.due_at AS dueAt
-       FROM tasks t JOIN users u ON u.id = t.user_id
-       WHERE t.completed_at IS NULL AND t.due_at > ? AND t.due_at <= ?
-         AND t.reminder_queued_at IS NULL`,
+  const db = drizzle(database, { schema: { tasks, users } })
+  const reminders = await db
+    .select({
+      taskId: tasks.id,
+      userId: tasks.userId,
+      email: users.email,
+      title: tasks.title,
+      dueAt: tasks.dueAt,
+    })
+    .from(tasks)
+    .innerJoin(users, eq(tasks.userId, users.id))
+    .where(
+      and(
+        isNull(tasks.completedAt),
+        gt(tasks.dueAt, now),
+        lte(tasks.dueAt, until),
+        isNull(tasks.reminderQueuedAt),
+      ),
     )
-    .bind(now, until)
-    .all<ReminderMessage>()
 
-  return results
+  return reminders.flatMap((reminder) =>
+    reminder.dueAt ? [{ ...reminder, dueAt: reminder.dueAt }] : [],
+  )
 }
 
-export async function markReminderQueued(db: TodoDatabase, taskId: string, queuedAt: string) {
+export async function markReminderQueued(database: TodoDatabase, taskId: string, queuedAt: string) {
+  const db = drizzle(database, { schema: { tasks, users } })
   await db
-    .prepare('UPDATE tasks SET reminder_queued_at = ? WHERE id = ? AND reminder_queued_at IS NULL')
-    .bind(queuedAt, taskId)
+    .update(tasks)
+    .set({ reminderQueuedAt: queuedAt })
+    .where(and(eq(tasks.id, taskId), isNull(tasks.reminderQueuedAt)))
     .run()
 }
