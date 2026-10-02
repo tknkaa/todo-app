@@ -32,7 +32,7 @@
 
 ### 予定
 
-- Google OAuth ([#2](https://github.com/tknkaa/todo-app/issues/2))
+- Google OAuth ([#2](https://github.com/ut-code/kanban/issues/2))
 - メールアドレスの確認とパスワードリセットは、現時点では扱わない。
 
 ## タスク
