@@ -1,19 +1,21 @@
 {
-  "name": "@todo/reminder-worker",
+  "name": "@todo/application",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "deploy": "wrangler deploy"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@todo/db": "workspace:*",
-    "@todo/domain": "workspace:*"
+    "@todo/domain": "workspace:*",
+    "valibot": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
     "typescript": "catalog:",
-    "wrangler": "catalog:"
+    "vitest": "catalog:"
   }
 }

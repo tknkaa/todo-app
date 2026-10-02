@@ -6,6 +6,12 @@ The web app uses shadcn/ui components with Tailwind CSS v4. Add or update compon
 
 Database tables are defined in `packages/db/src/schema.ts`. Generate a migration with `pnpm db:generate`; Wrangler applies the SQL files from `packages/db/migrations` to D1. Cloudflare Worker settings live in `apps/web/wrangler.jsonc` and `apps/reminder-worker/wrangler.jsonc`.
 
+## Architecture
+
+Task use cases and repository ports live in `packages/application`; `packages/db` implements those ports with Drizzle and D1. The web Worker adapts HTTP requests to use cases, while routes and components handle presentation. Pure application behavior is tested with Vitest.
+
+Run `pnpm check` to execute Oxfmt, Oxlint, TypeScript checks, and Vitest.
+
 ## Local development
 
 ```sh
