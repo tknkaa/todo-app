@@ -4,13 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "pnpm build && wrangler dev --local",
+    "dev:watch": "vite dev",
     "build": "vite build",
     "typecheck": "vite build && tsc -p tsconfig.json",
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
     "@todo/domain": "workspace:*",
+    "@todo/db": "workspace:*",
     "@tanstack/react-start": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/router-devtools": "catalog:",

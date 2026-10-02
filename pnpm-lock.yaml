@@ -80,6 +80,9 @@ importers:
       '@tanstack/router-devtools':
         specifier: 'catalog:'
         version: 1.167.2(@tanstack/react-router@1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.34)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@todo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@todo/domain':
         specifier: workspace:*
         version: link:../../packages/domain
