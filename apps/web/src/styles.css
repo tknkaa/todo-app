@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.985 0.006 100);
+  --foreground: oklch(0.25 0.025 145);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.025 145);
+  --primary: oklch(0.43 0.065 145);
+  --primary-foreground: oklch(0.99 0.005 100);
+  --secondary: oklch(0.94 0.018 115);
+  --secondary-foreground: oklch(0.35 0.035 145);
+  --muted: oklch(0.96 0.008 100);
+  --muted-foreground: oklch(0.57 0.018 125);
+  --accent: oklch(0.94 0.025 120);
+  --accent-foreground: oklch(0.32 0.04 145);
+  --destructive: oklch(0.56 0.19 28);
+  --border: oklch(0.91 0.012 110);
+  --input: oklch(0.91 0.012 110);
+  --ring: oklch(0.58 0.055 145);
+  --radius: 0.65rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --font-sans: 'DM Sans', 'Noto Sans JP', sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  min-width: 320px;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'DM Sans', 'Noto Sans JP', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

@@ -1,0 +1,39 @@
+{
+  "name": "@todo/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm build && wrangler dev --local --persist-to .wrangler/state-drizzle-baseline",
+    "dev:watch": "vite dev",
+    "build": "vite build",
+    "typecheck": "vite build && tsc -p tsconfig.json",
+    "deploy": "pnpm build && wrangler deploy"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "@tanstack/router-devtools": "catalog:",
+    "@todo/db": "workspace:*",
+    "@todo/domain": "workspace:*",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "lucide-react": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwind-merge": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-tsconfig-paths": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

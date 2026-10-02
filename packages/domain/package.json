@@ -1,0 +1,9 @@
+{
+  "name": "@todo/domain",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "devDependencies": { "typescript": "catalog:" }
+}
