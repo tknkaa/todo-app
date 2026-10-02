@@ -83,6 +83,8 @@ Cloudflare D1 (SQLite)。スキーマは `packages/db/src/schema.ts` (Drizzle)�
 | `title`                 | TEXT    | NOT NULL                  | 1〜200 文字 (アプリ側で検証)                                                                            |
 | `status`                | TEXT    | NOT NULL、既定 `'todo'`   | ボードの列。`todo` / `doing` / `done`                                                                   |
 | `position`              | REAL    | NOT NULL、既定 0          | 列の中の順番。小さいほど上。新しいタスクは `min(未着手の position) - 1`、2 枚の間に入れたときは中間の値 |
+| `description`           | TEXT    | NOT NULL、既定 `''`       | 本文 (Markdown)                                                                                         |
+| `description_version`   | INTEGER | NOT NULL、既定 0          | 本文の版。保存のたびに 1 増える。古い版からの保存を断るために使う                                       |
 | `due_at`                | TEXT    |                           | 締め切り (UTC の ISO 8601)                                                                              |
 | `completed_at`          | TEXT    |                           | 完了日時。`status` が `done` のときだけ入る                                                             |
 | `remind_before_minutes` | INTEGER |                           | 締め切りの何分前にリマインドするか。NULL はリマインドなし                                               |

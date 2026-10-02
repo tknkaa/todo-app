@@ -70,7 +70,7 @@ export async function handleTasksRequest(
   }
 
   if (request.method === 'GET') {
-    const task = await deps.tasks.findAccessible(userId, taskId)
+    const task = await deps.tasks.findAccessibleDetail(userId, taskId)
     return task ? json(task) : notFound()
   }
 
@@ -82,12 +82,34 @@ export async function handleTasksRequest(
     const current = await deps.tasks.findAccessible(userId, taskId)
     if (!current) return notFound()
 
-    const { status, title, dueAt, remindBeforeMinutes, position } = parsed.value
+    const { status, title, dueAt, remindBeforeMinutes, position, description, descriptionVersion } =
+      parsed.value
     if (remindBeforeMinutes !== undefined && current.userId !== userId) {
       return json({ error: 'リマインドを設定できるのはタスクの所有者だけです。' }, 403)
     }
     const reminder = resolveReminder(current, { dueAt, remindBeforeMinutes })
     if (!reminder.ok) return json({ error: reminder.message }, 400)
+
+    // Save the body first: when it is refused, nothing else is changed either.
+    let savedVersion: number | undefined
+    if (description !== undefined && descriptionVersion !== undefined) {
+      const version = await deps.tasks.updateDescription(
+        userId,
+        taskId,
+        description,
+        descriptionVersion,
+      )
+      if (version === null) {
+        return json(
+          {
+            error: '他の人が先に本文を変更しました。最新の本文を読み込んでください。',
+            code: 'conflict',
+          },
+          409,
+        )
+      }
+      savedVersion = version
+    }
 
     await deps.tasks.update(userId, taskId, {
       title,
@@ -103,7 +125,9 @@ export async function handleTasksRequest(
       await deps.tasks.setStatus(userId, taskId, change.status, change.completedAt)
     }
     await deps.notify(await deps.members.accessUserIds(taskId))
-    return new Response(null, { status: 204 })
+    return savedVersion === undefined
+      ? new Response(null, { status: 204 })
+      : json({ descriptionVersion: savedVersion })
   }
 
   if (request.method === 'DELETE') {

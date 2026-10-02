@@ -103,6 +103,10 @@ export const tasks = sqliteTable(
     // Order inside a board column. Smaller comes first; a card dropped between two others
     // gets the number halfway between them.
     position: real('position').notNull().default(0),
+    // The body text, as Markdown. `descriptionVersion` goes up with every change so a save made
+    // from an outdated copy can be refused instead of overwriting someone else's edit.
+    description: text('description').notNull().default(''),
+    descriptionVersion: integer('description_version').notNull().default(0),
     dueAt: text('due_at'),
     completedAt: text('completed_at'),
     remindBeforeMinutes: integer('remind_before_minutes'),
