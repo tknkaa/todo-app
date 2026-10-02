@@ -1,6 +1,6 @@
 import { and, eq, gt, isNull, lte } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
-import type { ReminderMessage } from '@todo/domain'
+import type { ReminderMessage } from '../types'
 import { tasks, users } from '../schema'
 import type { TodoDatabase } from './repository'
 

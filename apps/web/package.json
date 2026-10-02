@@ -8,15 +8,14 @@
     "dev:watch": "vite dev",
     "build": "vite build",
     "typecheck": "vite build && tsc -p tsconfig.json",
-    "deploy": "pnpm build && wrangler deploy"
+    "deploy": "pnpm build && wrangler deploy",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@tanstack/router-devtools": "catalog:",
-    "@todo/application": "workspace:*",
     "@todo/db": "workspace:*",
-    "@todo/domain": "workspace:*",
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
@@ -25,18 +24,21 @@
     "radix-ui": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tailwind-merge": "catalog:"
+    "tailwind-merge": "catalog:",
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-tsconfig-paths": "catalog:",
+    "vitest": "catalog:",
     "wrangler": "catalog:"
   }
 }

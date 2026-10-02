@@ -107,9 +107,6 @@ importers:
       '@todo/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@todo/domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
@@ -132,15 +129,9 @@ importers:
       '@tanstack/router-devtools':
         specifier: 'catalog:'
         version: 1.167.2(@tanstack/react-router@1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.34)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@todo/application':
-        specifier: workspace:*
-        version: link:../../packages/application
       '@todo/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@todo/domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
       better-auth:
         specifier: 'catalog:'
         version: 1.7.7(@tanstack/react-start@1.168.60(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.6)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15)))(drizzle-kit@0.31.11)(drizzle-orm@0.45.3(@cloudflare/workers-types@4.20260702.1)(kysely@0.29.6))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3(@types/node@24.19.1)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15)))
@@ -168,6 +159,9 @@ importers:
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.7.0
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
@@ -178,6 +172,9 @@ importers:
       '@tanstack/router-plugin':
         specifier: 'catalog:'
         version: 1.168.42(@tanstack/react-router@1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(esbuild@0.28.2)(rollup@4.63.6)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
       '@types/react':
         specifier: 'catalog:'
         version: 19.3.0
@@ -196,34 +193,15 @@ importers:
       vite-tsconfig-paths:
         specifier: 'catalog:'
         version: 5.1.4(typescript@5.9.3)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15))
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15))
       wrangler:
         specifier: 'catalog:'
         version: 4.146.0(@cloudflare/workers-types@4.20260702.1)(@types/node@24.19.1)
 
-  packages/application:
-    dependencies:
-      '@todo/domain':
-        specifier: workspace:*
-        version: link:../domain
-      valibot:
-        specifier: 'catalog:'
-        version: 1.5.0(typescript@5.9.3)
-    devDependencies:
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-      vitest:
-        specifier: 'catalog:'
-        version: 5.0.3(@types/node@24.19.1)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15))
-
   packages/db:
     dependencies:
-      '@todo/application':
-        specifier: workspace:*
-        version: link:../application
-      '@todo/domain':
-        specifier: workspace:*
-        version: link:../domain
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.3(@cloudflare/workers-types@4.20260702.1)(kysely@0.29.6)
@@ -243,12 +221,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.15))
-
-  packages/domain:
-    devDependencies:
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
 packages:
 

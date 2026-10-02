@@ -8,8 +8,7 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "@todo/db": "workspace:*",
-    "@todo/domain": "workspace:*"
+    "@todo/db": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",

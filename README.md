@@ -8,7 +8,7 @@ Database tables are defined in `packages/db/src/schema.ts`. Generate a migration
 
 ## Architecture
 
-Task use cases and repository ports live in `packages/application`; `packages/db` implements those ports with Drizzle and D1. The web Worker adapts HTTP requests to use cases, while routes and components handle presentation. Pure application behavior is tested with Vitest.
+Shared code lives in `packages/db` (Drizzle schema, migrations, D1 repository and the shared `Task`/`ReminderMessage` types). `apps/web` holds the HTTP handlers, auth and UI; pure functions (input validation, formatting) are in `apps/web/src/lib` and covered by Vitest, and handlers are tested against an in-memory SQLite database. `apps/reminder-worker` runs the cron-triggered reminder job.
 
 Run `pnpm check` to execute Oxfmt, Oxlint, TypeScript checks, and Vitest.
 

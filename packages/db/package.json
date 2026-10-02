@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema.ts"
+    "./schema": "./src/schema.ts",
+    "./testing": "./src/testing/d1.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
@@ -13,8 +14,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@todo/application": "workspace:*",
-    "@todo/domain": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
